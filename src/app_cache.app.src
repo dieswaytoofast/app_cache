@@ -1,0 +1,15 @@
+{application, app_cache,
+ [
+  {description, "mnesia based app cache"},
+  {vsn, "0.2.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  sasl,
+                  mnesia,
+                  lager
+                 ]},
+  {mod, {app_cache_app, []}},
+  {env, []}
+ ]}.
