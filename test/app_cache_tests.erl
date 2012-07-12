@@ -69,12 +69,6 @@
                 type = set,
                 fields = [id, timestamp, name, pretty_name]}]).
 
--record(test_table_1, {
-            key,
-            timestamp,
-            value,
-            name}).
-
 %% ------------------------------------------------------------------
 %% Test Function Definitions
 %% ------------------------------------------------------------------

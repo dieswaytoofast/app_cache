@@ -43,3 +43,14 @@
           reason                                            :: any()
          }).
 
+%% Testing
+-record(test_table_1, {
+            key,
+            timestamp,
+            value,
+            name}).
+-record(test_table_2, {
+            key,
+            timestamp,
+            value,
+            name}).
