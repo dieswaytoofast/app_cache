@@ -40,7 +40,8 @@
           fields = []                                       :: [table_key()],
           secondary_index_fields = []                       :: [table_key()],
           last_update                                       :: non_neg_integer(),
-          reason                                            :: any()
+          reason                                            :: any(),
+          extras                                            :: any()
          }).
 
 %% Testing
