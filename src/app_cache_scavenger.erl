@@ -41,7 +41,7 @@
 %% Includes & Defines
 %% ------------------------------------------------------------------
 
--include("app_cache.hrl").
+-include("defaults.hrl").
 
 -define(SERVER, ?MODULE).
 
@@ -66,7 +66,7 @@ get_timers() ->
 
 -spec reset_timer(table()) -> ok | error().
 reset_timer(Table) ->
-    gen_server:call(?SERVER, {reset_timer, Table}).
+    gen_server:cast(?SERVER, {reset_timer, Table}).
 
 
 %% ------------------------------------------------------------------
@@ -86,17 +86,6 @@ init([]) ->
             end, [], Metatables),
     {ok, #state{timers = Timers}}.
 
-
-handle_call({reset_timer, Table}, _From, #state{timers = Timers} = _State) ->
-    {Response, FinalTimers} = case mnesia:transaction(fun() -> mnesia:read(?METATABLE, Table) end) of
-        {atomic, [#app_metatable{time_to_live = TimeToLive}]} ->
-            {ok, update_timers(Table, TimeToLive, Timers)};
-        [] ->
-            {{error, {invalid_table, Table}}, Timers}
-    end, 
-    lager:debug("Timers:~p~n", [FinalTimers]),
-    {reply, Response, #state{timers = FinalTimers}};
-
 handle_call({get_timers}, _From, #state{timers = Timers} = State) ->
     {reply, Timers, State};
 
@@ -104,10 +93,25 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
+handle_cast({reset_timer, Table}, #state{timers = Timers} = State) ->
+    {_Response, FinalTimers} = case mnesia:transaction(fun() -> mnesia:read(?METATABLE, Table) end) of
+        {atomic, [#app_metatable{time_to_live = TimeToLive}]} ->
+            {ok, update_timers(Table, TimeToLive, Timers)};
+        [] ->
+            {{error, {invalid_table, Table}}, Timers}
+    end, 
+    {noreply, State#state{timers = FinalTimers}};
 
-handle_cast({scavenge, Table}, State) ->
-    lists:foreach(fun (Entry) -> mnesia:dirty_delete_object(Entry) end, expired_entries(Table)),
-    {noreply, State};
+handle_cast({scavenge, Table}, #state{timers = Timers} = State) ->
+    FinalTimers = 
+    try
+        lists:foreach(fun (Entry) -> mnesia:dirty_delete_object(Entry) end, expired_entries(Table)),
+        Timers
+    catch
+        _:{aborted, {no_exists, _}} ->
+            cancel_old_timer(Table, Timers)
+    end,
+    {noreply, State#state{timers = FinalTimers}};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

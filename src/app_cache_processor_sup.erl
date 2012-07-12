@@ -10,7 +10,7 @@
 %%% a copy of the New BSD license with this software. If not, it can be
 %%% retrieved from: http://www.opensource.org/licenses/bsd-license.php
 %%%-------------------------------------------------------------------
--module(app_cache_sup).
+-module(app_cache_processor_sup).
 
 -author('Juan Jose Comellas <juanjo@comellas.org>').
 -author('Mahesh Paolini-Subramanya <mahesh@dieswaytoofast.com>').
@@ -43,5 +43,5 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    Cache = ?CHILD(?MODULE, worker, app_cache, []),
-    {ok, { {one_for_one, 5, 300}, [Cache]} }.
+    CacheProcessor = ?CHILD(?MODULE, worker, app_cache_processor, []),
+    {ok, { {one_for_one, 5, 300}, [CacheProcessor]} }.

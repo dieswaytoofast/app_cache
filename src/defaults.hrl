@@ -10,24 +10,16 @@
 %%% retrieved from: http://www.opensource.org/licenses/bsd-license.php
 %%%-------------------------------------------------------------------
 
--type error()           :: {error, Reason :: term()}.
--type table()           :: atom().
--type table_key()       :: any().
--type table_key_position()  :: non_neg_integer().
--type table_version()   :: non_neg_integer().
--type table_type()      :: atom().
--type timestamp()       :: non_neg_integer().
--type last_update()     :: timestamp().
--type time_to_live()    :: non_neg_integer().
--type table_fields()    :: [table_key()].
+-include("types.hrl").
 
--type app_field()                       :: atom().
 
+-define(PROCESSOR,     app_cache_processor).
+-define(SCAVENGER,     app_cache_scavenger).
 
 -define(INFINITY,     infinity).
 -define(META_VERSION, 1).
 
--define(SCAVENGE_FACTOR, 1*1000).       %% 1000 'cos of microseconds
+-define(SCAVENGE_FACTOR, 2*1000).       %% 1000 'cos of microseconds
 
 -define(DEFAULT_CACHE_TTL, ?INFINITY).
 -define(TIMESTAMP,     timestamp).
@@ -35,6 +27,11 @@
 -define(DEFAULT_TYPE, set).
 
 -define(METATABLE, app_metatable).
+
+-define(TRANSACTION_TYPE_SAFE, safe).
+-define(TRANSACTION_TYPE_DIRTY, dirty).
+
+
 -record(app_metatable, {
           table                                             :: table(),
           version = ?META_VERSION                           :: table_version(),
