@@ -153,11 +153,7 @@ cache_init(Tables) ->
 
 -spec cache_init([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
 cache_init(Nodes, Tables) ->
-    NewTables = lists:map(fun(TableInfo) ->
-                    Fields = get_record_fields(TableInfo#app_metatable.table),
-                    TableInfo#app_metatable{fields = Fields} 
-            end, Tables),
-    gen_server:call(?PROCESSOR, {cache_init, Nodes, NewTables}).
+    gen_server:call(?PROCESSOR, {cache_init, Nodes, Tables}).
 
 
 -spec create_tables() -> ok | {aborted, Reason :: any()}.
@@ -194,9 +190,7 @@ create_table(TableInfo) ->
 
 -spec create_table(#app_metatable{}, [node()]) -> ok | {aborted, Reason :: any()}.
 create_table(TableInfo, Nodes) ->
-    Fields = get_record_fields(TableInfo#app_metatable.table),
-    NewTableInfo = TableInfo#app_metatable{fields = Fields}, 
-    gen_server:call(?PROCESSOR, {create_table, NewTableInfo, Nodes}).
+    gen_server:call(?PROCESSOR, {create_table, TableInfo, Nodes}).
 
 % TODO make this dependant on the node
 -spec upgrade_metatable() -> {atomic, ok} | {aborted, Reason :: any()}.
