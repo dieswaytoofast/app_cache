@@ -70,53 +70,13 @@
 %%
 %% Test Descriptions
 %%
-t_cached_sequence_create_test_() ->
-    [{"create a cached_sequence",
-     ?setup(fun t_cached_sequence_create/1)}].
+table_delete_record_test_() ->
+    [{"table_delete_record",
+     ?setup(fun t_delete_record/1)}].
 
-t_cached_sequence_current_value_test_() ->
-    [{"cached_sequence current_value",
-     ?setup(fun t_cached_sequence_current_value/1)}].
-
-t_cached_sequence_current_value_0_test_() ->
-    [{"cached_sequence current_value_0",
-     ?setup(fun t_cached_sequence_current_value_0/1)}].
-
-t_cached_sequence_current_value_1_test_() ->
-    [{"cached_sequence current_value_1",
-     ?setup(fun t_cached_sequence_current_value_1/1)}].
-
-t_cached_sequence_next_value_test_() ->
-    [{"cached_sequence next_value",
-     ?setup(fun t_cached_sequence_next_value/1)}].
-
-t_cached_sequence_delete_test_() ->
-    [{"cached_sequence delete",
-     ?setup(fun t_cached_sequence_delete/1)}].
-
-t_sequence_create_test_() ->
-    [{"create a sequence",
-     ?setup(fun t_sequence_create/1)}].
-
-t_sequence_current_value_test_() ->
-    [{"sequence current_value",
-     ?setup(fun t_sequence_current_value/1)}].
-
-t_sequence_current_value_0_test_() ->
-    [{"sequence current_value_0",
-     ?setup(fun t_sequence_current_value_0/1)}].
-
-t_sequence_current_value_1_test_() ->
-    [{"sequence current_value_1",
-     ?setup(fun t_sequence_current_value_1/1)}].
-
-t_sequence_next_value_test_() ->
-    [{"sequence next_value",
-     ?setup(fun t_sequence_next_value/1)}].
-
-t_sequence_delete_test_() ->
-    [{"sequence delete",
-     ?setup(fun t_sequence_delete/1)}].
+table_delete_record_dirty_test_() ->
+    [{"table_delete_record_dirty_test_",
+     ?setup(fun t_delete_record_dirty/1)}].
 
 table_info_test_() ->
     [{"table_info",
@@ -201,6 +161,54 @@ table_delete_data_test_() ->
 table_delete_data_dirty_test_() ->
     [{"table_delete_data_dirty_test_",
      ?setup(fun t_delete_data_dirty/1)}].
+
+t_cached_sequence_create_test_() ->
+    [{"create a cached_sequence",
+     ?setup(fun t_cached_sequence_create/1)}].
+
+t_cached_sequence_current_value_test_() ->
+    [{"cached_sequence current_value",
+     ?setup(fun t_cached_sequence_current_value/1)}].
+
+t_cached_sequence_current_value_0_test_() ->
+    [{"cached_sequence current_value_0",
+     ?setup(fun t_cached_sequence_current_value_0/1)}].
+
+t_cached_sequence_current_value_1_test_() ->
+    [{"cached_sequence current_value_1",
+     ?setup(fun t_cached_sequence_current_value_1/1)}].
+
+t_cached_sequence_next_value_test_() ->
+    [{"cached_sequence next_value",
+     ?setup(fun t_cached_sequence_next_value/1)}].
+
+t_cached_sequence_delete_test_() ->
+    [{"cached_sequence delete",
+     ?setup(fun t_cached_sequence_delete/1)}].
+
+t_sequence_create_test_() ->
+    [{"create a sequence",
+     ?setup(fun t_sequence_create/1)}].
+
+t_sequence_current_value_test_() ->
+    [{"sequence current_value",
+     ?setup(fun t_sequence_current_value/1)}].
+
+t_sequence_current_value_0_test_() ->
+    [{"sequence current_value_0",
+     ?setup(fun t_sequence_current_value_0/1)}].
+
+t_sequence_current_value_1_test_() ->
+    [{"sequence current_value_1",
+     ?setup(fun t_sequence_current_value_1/1)}].
+
+t_sequence_next_value_test_() ->
+    [{"sequence next_value",
+     ?setup(fun t_sequence_next_value/1)}].
+
+t_sequence_delete_test_() ->
+    [{"sequence delete",
+     ?setup(fun t_sequence_delete/1)}].
 
 set_and_get_data_many_test_() ->
     [{"many record is inserted and read",
@@ -407,13 +415,27 @@ t_key_exists_dirty(_In) ->
 
 t_delete_data(_In) ->
     ok = app_cache:set_data(?RECORD),
-    Result = app_cache:remove_data(test_table_1, ?KEY),
+    Result = app_cache:remove_data(?TEST_TABLE_1, ?KEY),
     ?_assertEqual(Result, ok).
 
 t_delete_data_dirty(_In) ->
     ok = app_cache:set_data(?RECORD),
-    Result = app_cache:remove_data(dirty, test_table_1, ?KEY),
+    Result = app_cache:remove_data(dirty, ?TEST_TABLE_1, ?KEY),
     ?_assertEqual(Result, ok).
+
+t_delete_record(_In) ->
+    ok = app_cache:set_data(?RECORD),
+    [Record] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    app_cache:remove_record(Record),
+    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    ?_assertEqual(Data, []).
+
+t_delete_record_dirty(_In) ->
+    ok = app_cache:set_data(?RECORD),
+    [Record] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    app_cache:remove_record(dirty, Record),
+    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    ?_assertEqual(Data, []).
 
 t_set_and_get_data_many(_In) ->
     LoadFun = get_load_data_fun(100),

@@ -38,6 +38,7 @@
 -export([read_all_data/2]).
 -export([write_data/2]).
 -export([delete_data/3]).
+-export([delete_record/2]).
 -export([increment_data/3, increment_data/4]).
 
 -export([table_fields/1]).
@@ -453,6 +454,18 @@ delete_data(?TRANSACTION_TYPE_SAFE, Table, Key) ->
     end;
 delete_data(?TRANSACTION_TYPE_DIRTY, Table, Key) ->
     mnesia:dirty_delete({Table, Key}).
+
+-spec delete_record(transaction_type(), tuple()) -> ok | error().
+delete_record(?TRANSACTION_TYPE_SAFE, Record) ->
+    DeleteFun = fun () -> mnesia:delete_object(Record) end,
+    case mnesia:transaction(DeleteFun) of
+        {atomic, ok} ->
+            ok;
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end;
+delete_record(?TRANSACTION_TYPE_DIRTY, Record) ->
+    mnesia:dirty_delete_object(Record).
 
 -spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
 increment_data(_TransactionType, Table, Key, Value) ->

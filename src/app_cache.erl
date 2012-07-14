@@ -43,7 +43,7 @@
          set_data/1, remove_data/2]).
 -export([key_exists/3, get_data_from_index/4, get_data/3, get_last_entered_data/2, get_after/3, 
          get_all_data/1, get_all_data/2,
-         set_data/2, remove_data/3]).
+         set_data/2, remove_data/3, remove_record/1, remove_record/2]).
 -export([sequence_create/1, sequence_create/2, sequence_set_value/2, sequence_current_value/1, 
          sequence_next_value/1, sequence_next_value/2, sequence_delete/1]).
 -export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3, cached_sequence_set_value/2, 
@@ -326,6 +326,14 @@ remove_data(Table, Key) ->
 -spec remove_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
 remove_data(TransactionType, Table, Key) ->
     app_cache_processor:delete_data(TransactionType, Table, Key).
+
+-spec remove_record(tuple()) -> ok | error().
+remove_record(Record) ->
+    remove_record(?TRANSACTION_TYPE_SAFE, Record).
+
+-spec remove_record(transaction_type(), tuple()) -> ok | error().
+remove_record(TransactionType, Record) ->
+    app_cache_processor:delete_record(TransactionType, Record).
 
 -spec sequence_create(sequence_key()) -> ok.
 sequence_create(Key) ->
