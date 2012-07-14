@@ -74,6 +74,11 @@ init([]) ->
             end, dict:new(), app_cache:get_all_data(?SEQUENCE_TABLE)),
     {ok, #state{sequences = Dict}}.
 
+
+handle_call({create, Key, Start, UpperBoundIncrement}, _From, State) ->
+    NewDict = initialize_cache(Key, Start, Start, UpperBoundIncrement, State),
+    {reply, ok, State#state{sequences = NewDict}};
+
 handle_call({next_value, Key, Increment}, _From, State) ->
     Dict = State#state.sequences,
     Sequence = get_sequence(Key, Dict),
@@ -100,8 +105,6 @@ handle_call({current_value, Key}, _From, State) ->
     end,
     {reply, CachedValue, State#state{sequences = NewDict}};
 
-%% create is the same as set_value since they both create the entry if it
-%% doesn't exist
 handle_call({set_value, Key, Value}, _From, State) ->
     NewDict = initialize_cache(Key, Value, State),
     {reply, ok, State#state{sequences = NewDict}};
@@ -148,7 +151,7 @@ update_upper_bound(Sequence) ->
     NewUpperBound = app_cache:sequence_next_value(Key, UpperBoundIncrement),
     %% Validate against ext. manip of the sequence
     % sequence was incremeneted past the old value
-    if NewUpperBound < CachedValue ->
+    if NewUpperBound =< CachedValue ->
             FinalUpperBound = CachedValue + UpperBoundIncrement,
             app_cache:sequence_init(Key, FinalUpperBound),
             Sequence#sequence_cache{cached_value = CachedValue,
@@ -167,14 +170,23 @@ get_sequence(Key, Dict) ->
             #sequence_cache{key = Key}
     end.
 
+-spec initialize_cache(sequence_key(), sequence_value(), #state{}) -> any().
 initialize_cache(Key, Value, State) ->
     Dict = State#state.sequences,
     Sequence = get_sequence(Key, Dict),
+    Start = Sequence#sequence_cache.start,
     UpperBoundIncrement = Sequence#sequence_cache.upper_bound_increment,
+    initialize_cache(Key, Value, Start, UpperBoundIncrement, State). 
+
+-spec initialize_cache(sequence_key(), sequence_value(), sequence_value(), sequence_value(), #state{}) -> any().
+initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
+    Dict = State#state.sequences,
     app_cache:set_data(#sequence_table{key = Key,
                                  value = Value}),
     app_cache:sequence_next_value(Key, UpperBoundIncrement),
     dict:store(Key, #sequence_cache{key = Key,
+                                    start = Start,
+                                    upper_bound_increment = UpperBoundIncrement,
                                     cached_value = Value,
                                     upper_bound = Value}, Dict).
         

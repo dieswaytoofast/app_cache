@@ -46,7 +46,7 @@
          set_data/2, remove_data/3]).
 -export([sequence_create/1, sequence_create/2, sequence_set_value/2, sequence_current_value/1, 
          sequence_next_value/1, sequence_next_value/2, sequence_delete/1]).
--export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_set_value/2, 
+-export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3, cached_sequence_set_value/2, 
          cached_sequence_current_value/1, cached_sequence_next_value/1, cached_sequence_next_value/2,
          cached_sequence_delete/1, cached_sequence_all_sequences/0]).
 
@@ -372,11 +372,16 @@ cached_sequence_create(Key) ->
 
 -spec cached_sequence_create(sequence_key(), sequence_value()) -> ok.
 cached_sequence_create(Key, Start) when Start >= 0 ->
-    gen_server:call(?SEQUENCE_CACHE, {set_value, Key, Start}).
+    UpperBoundIncrement = get_env(cache_upper_bound_increment, ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT),
+    cached_sequence_create(Key, Start, UpperBoundIncrement).
+
+-spec cached_sequence_create(sequence_key(), sequence_value(), sequence_value()) -> ok.
+cached_sequence_create(Key, Start, UpperBoundIncrement) when Start >= 0, UpperBoundIncrement >= 0 ->
+    gen_server:call(?SEQUENCE_CACHE, {create, Key, Start, UpperBoundIncrement}).
 
 -spec cached_sequence_set_value(sequence_key(), sequence_value()) -> ok.
-cached_sequence_set_value(Key, Start) when Start >= 0 ->
-    cached_sequence_create(Key, Start).
+cached_sequence_set_value(Key, Value) when Value >= 0 ->
+    gen_server:call(?SEQUENCE_CACHE, {set_value, Key, Value}).
 
 -spec cached_sequence_current_value(sequence_key()) -> sequence_value().
 cached_sequence_current_value(Key) ->
