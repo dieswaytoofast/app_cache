@@ -20,5 +20,7 @@
 -type time_to_live()    :: non_neg_integer().
 -type table_fields()    :: [table_key()].
 -type transaction_type()    :: safe | dirty.
+-type sequence_key()    :: any().
+-type sequence_value()   :: non_neg_integer().
 
 -type app_field()                       :: atom().

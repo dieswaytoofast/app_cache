@@ -44,6 +44,14 @@
                 fields = [key, timestamp, value, name],
                 secondary_index_fields = [name]
             }).
+-define(TABLE3, #app_metatable{
+                table = test_table_3,
+                version = 1, 
+                time_to_live = infinity,
+                type = set,
+                fields = [key, value],
+                secondary_index_fields = []
+            }).
 -define(KEY, foo).
 -define(KEY2, foo).
 -define(VALUE, bar).
@@ -54,20 +62,6 @@
 -define(RECORD2, {test_table_1, ?KEY2, undefined, ?VALUE2, ?NAME2}).
 -define(RECORD30, {test_table_2, ?KEY, undefined, ?VALUE, ?NAME}).
 -define(RECORD31, {test_table_2, ?KEY, undefined, ?VALUE2, ?NAME2}).
--define(TABLES, [ 
-            #app_metatable{
-                table = test_table_1,
-                version = 1, 
-                time_to_live = 60,
-                type = ordered_set,
-                fields = [key, timestamp, value, name]
-                },
-            #app_metatable{
-                table = test_table_2,
-                version = 1, 
-                time_to_live = 180,
-                type = set,
-                fields = [id, timestamp, name, pretty_name]}]).
 
 %% ------------------------------------------------------------------
 %% Test Function Definitions
@@ -76,6 +70,54 @@
 %%
 %% Test Descriptions
 %%
+t_cached_sequence_create_test_() ->
+    [{"create a cached_sequence",
+     ?setup(fun t_cached_sequence_create/1)}].
+
+t_cached_sequence_current_value_test_() ->
+    [{"cached_sequence current_value",
+     ?setup(fun t_cached_sequence_current_value/1)}].
+
+t_cached_sequence_current_value_0_test_() ->
+    [{"cached_sequence current_value_0",
+     ?setup(fun t_cached_sequence_current_value_0/1)}].
+
+t_cached_sequence_current_value_1_test_() ->
+    [{"cached_sequence current_value_1",
+     ?setup(fun t_cached_sequence_current_value_1/1)}].
+
+t_cached_sequence_next_value_test_() ->
+    [{"cached_sequence next_value",
+     ?setup(fun t_cached_sequence_next_value/1)}].
+
+t_cached_sequence_delete_test_() ->
+    [{"cached_sequence delete",
+     ?setup(fun t_cached_sequence_delete/1)}].
+
+t_sequence_create_test_() ->
+    [{"create a sequence",
+     ?setup(fun t_sequence_create/1)}].
+
+t_sequence_current_value_test_() ->
+    [{"sequence current_value",
+     ?setup(fun t_sequence_current_value/1)}].
+
+t_sequence_current_value_0_test_() ->
+    [{"sequence current_value_0",
+     ?setup(fun t_sequence_current_value_0/1)}].
+
+t_sequence_current_value_1_test_() ->
+    [{"sequence current_value_1",
+     ?setup(fun t_sequence_current_value_1/1)}].
+
+t_sequence_next_value_test_() ->
+    [{"sequence next_value",
+     ?setup(fun t_sequence_next_value/1)}].
+
+t_sequence_delete_test_() ->
+    [{"sequence delete",
+     ?setup(fun t_sequence_delete/1)}].
+
 table_info_test_() ->
     [{"table_info",
      ?setup(fun t_table_info/1)}].
@@ -175,7 +217,8 @@ start() ->
     app_cache:setup(),
     app_cache:start(),
     app_cache:create_table(?TABLE1),
-    app_cache:create_table(?TABLE2).
+    app_cache:create_table(?TABLE2),
+    app_cache:create_table(?TABLE3).
 
 
 stop(_) ->
@@ -188,8 +231,80 @@ stop(_) ->
 %% Helper Functions
 %%
 
-t_table_info(_In) ->
+t_sequence_create(_In) ->
+    ok = app_cache:sequence_create(?KEY, 1),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = 1}], MData).
 
+t_sequence_current_value(_In) ->
+    ok = app_cache:sequence_create(?KEY, 1),
+    lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
+                  lists:seq(1,10)),
+    Value = app_cache:sequence_current_value(?KEY),
+    ?_assertEqual(11, Value).
+
+t_sequence_current_value_0(_In) ->
+    ok = app_cache:sequence_create(?KEY, 1),
+    Value = app_cache:sequence_current_value(?KEY),
+    ?_assertEqual(1, Value).
+
+t_sequence_current_value_1(_In) ->
+    lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
+                  lists:seq(1,10)),
+    Value = app_cache:sequence_current_value(?KEY),
+    % 'cos the first 'next_value' is the 'set-value'
+    ?_assertEqual(10, Value).
+
+t_sequence_next_value(_In) ->
+    ok = app_cache:sequence_create(?KEY, 1),
+    lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
+                  lists:seq(1,10)),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = 11}], MData).
+
+t_sequence_delete(_In) ->
+    ok = app_cache:sequence_create(?KEY, 1),
+    app_cache:sequence_delete(?KEY),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([], MData).
+
+t_cached_sequence_create(_In) ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = 1 +?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}], MData).
+
+t_cached_sequence_current_value_0(_In) ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
+    Value = app_cache:cached_sequence_current_value(?KEY),
+    ?_assertEqual(1, Value).
+
+t_cached_sequence_current_value(_In) ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
+    lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
+                  lists:seq(1,20)),
+    Value = app_cache:cached_sequence_current_value(?KEY),
+    ?_assertEqual(21, Value).
+
+t_cached_sequence_current_value_1(_In) ->
+    lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
+                  lists:seq(1,20)),
+    Value = app_cache:cached_sequence_current_value(?KEY),
+    ?_assertEqual(21, Value).
+
+t_cached_sequence_next_value(_In) ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
+    lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
+                  lists:seq(1,20)),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = 31}], MData).
+
+t_cached_sequence_delete(_In) ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
+    app_cache:cached_sequence_delete(?KEY),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([], MData).
+
+t_table_info(_In) ->
     Data = app_cache:table_info(?TEST_TABLE_1),
     MTableInfo = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
     ?_assertEqual([Data], MTableInfo).

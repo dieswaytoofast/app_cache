@@ -17,6 +17,8 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+-include("defaults.hrl").
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
@@ -26,7 +28,8 @@ start(_StartType, _StartArgs) ->
     %% Initialize the tables used for the Mnesia cache.
     %% TODO: Some kind of mnesia timing thing
     app_cache_processor_sup:start_link(),
-    app_cache_scavenger_sup:start_link().
+    app_cache_scavenger_sup:start_link(),
+    app_cache_sequence_cache_sup:start_link().
 
 stop(_State) ->
     ok.

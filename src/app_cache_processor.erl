@@ -35,8 +35,10 @@
 -export([read_data_from_index/4]).
 -export([read_last_entered_data/2]).
 -export([read_after/3]).
+-export([read_all_data/2]).
 -export([write_data/2]).
 -export([delete_data/3]).
+-export([increment_data/3, increment_data/4]).
 
 -export([table_fields/1]).
 
@@ -411,17 +413,22 @@ read_after(TransactionType, Table, After) ->
     CachedData = cache_select(TransactionType, Table, After),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
+-spec read_all_data(transaction_type(), table()) -> list().
+read_all_data(TransactionType, Table) ->
+    % return only the valid values
+    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
+    CachedData = cache_select_all(TransactionType, Table),
+    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+
 
 
 -spec write_data(transaction_type(), any()) -> ok | error().
 write_data(TransactionType, Data) ->
-    CurrentTime = current_time_in_gregorian_seconds(),
     Table = element(1, Data),
     {_, TTLFieldIndex} = get_ttl_and_field_index(Table),
     % '+ 1' because we're looking at the tuple, not the record
-    TimestampedData = setelement(TTLFieldIndex + 1, Data, CurrentTime),
+    TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
     write_timestamped_data(TransactionType, TimestampedData).
-
 -spec write_timestamped_data(transaction_type(), any()) -> ok | error().
 write_timestamped_data(?TRANSACTION_TYPE_SAFE, TimestampedData) -> 
     WriteFun = fun () -> mnesia:write(TimestampedData) end,
@@ -446,6 +453,14 @@ delete_data(?TRANSACTION_TYPE_SAFE, Table, Key) ->
     end;
 delete_data(?TRANSACTION_TYPE_DIRTY, Table, Key) ->
     mnesia:dirty_delete({Table, Key}).
+
+-spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
+increment_data(_TransactionType, Table, Key, Value) ->
+    increment_data(Table, Key, Value).
+
+-spec increment_data(Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
+increment_data(Table, Key, Value) ->
+    mnesia:dirty_update_counter(Table, Key, Value).
 
 -spec cache_entry(transaction_type(), table(), table_key()) -> [any()].
 cache_entry(?TRANSACTION_TYPE_SAFE, Table, Key) ->
@@ -491,6 +506,13 @@ cache_last_entered_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
             cache_entry(TransactionType, Table, Key)
     end.
 
+-spec cache_select_all(transaction_type(), table()) -> [any()].
+cache_select_all(TransactionType, Table) ->
+    MatchHead = '$1',
+    Guard =  [],
+    Result = ['$_'],
+    cache_select(TransactionType, Table, undefined, [{MatchHead, Guard, Result}]).
+
 -spec cache_select(transaction_type(), table(), table_key()) -> [any()].
 cache_select(TransactionType, Table, After) ->
     MatchHead = '$1',
@@ -509,7 +531,6 @@ cache_select(?TRANSACTION_TYPE_SAFE, Table, _After, MatchSpec) ->
     end;
 cache_select(?TRANSACTION_TYPE_DIRTY, Table, _After, MatchSpec) ->
     mnesia:dirty_select(Table, MatchSpec).
-
 
 -spec get_ttl_and_field_index(table(), [#app_metatable{}]) -> time_to_live().
 get_ttl_and_field_index(Table, Tables) -> 
@@ -577,4 +598,11 @@ update_tables_with_table_info(TableInfo, Tables) ->
         false ->
             [TableInfo | Tables]
     end.
+
+-spec get_timestamped_data(undefined | table_key_position(), any()) -> any().
+get_timestamped_data(undefined, Data) ->
+    Data;
+get_timestamped_data(TTLFieldIndex, Data) ->
+    CurrentTime = current_time_in_gregorian_seconds(),
+    setelement(TTLFieldIndex + 1, Data, CurrentTime).
 

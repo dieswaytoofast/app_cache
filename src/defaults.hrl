@@ -12,15 +12,22 @@
 
 -include("types.hrl").
 
+%% Errors
+-define(NO_SUCH_SEQUENCE, no_such_sequence).
 
 -define(PROCESSOR,     app_cache_processor).
 -define(SCAVENGER,     app_cache_scavenger).
+-define(SEQUENCE_CACHE,     app_cache_sequence_cache).
 
 -define(INFINITY,     infinity).
 -define(META_VERSION, 1).
 
 -define(SCAVENGE_FACTOR, 2*1000).       %% 1000 'cos of microseconds
 
+-define(DEFAULT_CACHE_START, 1).
+-define(DEFAULT_CACHE_INCREMENT, 1).
+-define(DEFAULT_CACHE_CACHED_INCREMENT, 1).
+-define(DEFAULT_CACHE_UPPER_BOUND_INCREMENT, 10).
 -define(DEFAULT_CACHE_TTL, ?INFINITY).
 -define(TIMESTAMP,     timestamp).
 -define(DEFAULT_TIMESTAMP, undefined).
@@ -43,6 +50,28 @@
           reason                                            :: any(),
           extras                                            :: any()
          }).
+
+-define(SEQUENCE_TABLE, sequence_table).
+-record(?SEQUENCE_TABLE, {
+            key                                             :: sequence_key(),
+            value                                           :: sequence_value()
+            }).
+
+-define(SEQUENCE_TABLE_DEF, #app_metatable{
+                            table = ?SEQUENCE_TABLE,
+                            time_to_live = ?INFINITY,
+                            type = set,
+                            fields = [key, value]
+                          }).
+
+-record(sequence_cache, {
+            key                                                        :: sequence_key(),
+            start = ?DEFAULT_CACHE_START                               :: sequence_value(),
+            cached_value = ?DEFAULT_CACHE_START                        :: sequence_value(),
+            upper_bound = ?DEFAULT_CACHE_START                         :: sequence_value(),
+            upper_bound_increment = ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT :: sequence_value()
+         }).
+
 
 %% Testing
 -record(test_table_1, {

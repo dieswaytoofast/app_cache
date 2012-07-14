@@ -39,8 +39,17 @@
         ]).
 
 %% Data accessor APIs
--export([key_exists/2, get_data_from_index/3, get_data/2, get_last_entered_data/1, get_after/2, set_data/1, remove_data/2]).
--export([key_exists/3, get_data_from_index/4, get_data/3, get_last_entered_data/2, get_after/3, set_data/2, remove_data/3]).
+-export([key_exists/2, get_data_from_index/3, get_data/2, get_last_entered_data/1, get_after/2, 
+         set_data/1, remove_data/2]).
+-export([key_exists/3, get_data_from_index/4, get_data/3, get_last_entered_data/2, get_after/3, 
+         get_all_data/1, get_all_data/2,
+         set_data/2, remove_data/3]).
+-export([sequence_create/1, sequence_create/2, sequence_set_value/2, sequence_current_value/1, 
+         sequence_next_value/1, sequence_next_value/2, sequence_delete/1]).
+-export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_set_value/2, 
+         cached_sequence_current_value/1, cached_sequence_next_value/1, cached_sequence_next_value/2,
+         cached_sequence_delete/1, cached_sequence_all_sequences/0]).
+
 
 %% ------------------------------------------------------------------
 %% Includes & Defines
@@ -148,7 +157,7 @@ get_metatable() ->
 
 -spec cache_init([#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
 cache_init(Tables) ->
-    Nodes = get_env(cache_init, [node()]),
+    Nodes = get_env(cache_nodes, [node()]),
     cache_init(Nodes, Tables).
 
 -spec cache_init([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
@@ -292,6 +301,16 @@ get_after(Table, After) ->
 get_after(TransactionType, Table, After) ->
     app_cache_processor:read_after(TransactionType, Table, After).
 
+%% Get all data in table
+-spec get_all_data(table()) -> any().
+get_all_data(Table) ->
+    get_all_data(?TRANSACTION_TYPE_SAFE, Table).
+
+%% Get all data in table
+-spec get_all_data(transaction_type(), table()) -> any().
+get_all_data(TransactionType, Table) ->
+    app_cache_processor:read_all_data(TransactionType, Table).
+
 -spec set_data(Value::any()) -> ok | error().
 set_data(Value) ->
     set_data(?TRANSACTION_TYPE_SAFE, Value).
@@ -308,8 +327,92 @@ remove_data(Table, Key) ->
 remove_data(TransactionType, Table, Key) ->
     app_cache_processor:delete_data(TransactionType, Table, Key).
 
+-spec sequence_create(sequence_key()) -> ok.
+sequence_create(Key) ->
+    Start = get_env(cache_start, ?DEFAULT_CACHE_START),
+    sequence_create(Key, Start).
+
+-spec sequence_create(sequence_key(), sequence_value()) -> ok.
+sequence_create(Key, Start) when Start >= 0 ->
+    set_data(?TRANSACTION_TYPE_SAFE, {?SEQUENCE_TABLE, Key, Start}).
+
+-spec sequence_set_value(sequence_key(), sequence_value()) -> ok.
+sequence_set_value(Key, Start) when Start >= 0 ->
+    sequence_create(Key, Start).
+
+-spec sequence_current_value(sequence_key()) -> sequence_value().
+sequence_current_value(Key) ->
+    Data = get_data(?TRANSACTION_TYPE_SAFE, ?SEQUENCE_TABLE, Key),
+    case get_sequence_value(Data) of
+        undefined ->
+            sequence_create(Key),
+            ?DEFAULT_CACHE_START;
+        Value ->
+            Value
+    end.
+
+-spec sequence_next_value(sequence_key()) -> sequence_value().
+sequence_next_value(Key) ->
+    Increment = get_env(cache_increment, ?DEFAULT_CACHE_INCREMENT),
+    sequence_next_value(Key, Increment).
+
+-spec sequence_next_value(sequence_key(), sequence_value()) -> sequence_value().
+sequence_next_value(Key, Increment) when is_integer(Increment) ->
+    app_cache_processor:increment_data(?SEQUENCE_TABLE, Key, Increment).
+
+
+-spec sequence_delete(sequence_key()) -> ok.
+sequence_delete(Key) ->
+    remove_data(?TRANSACTION_TYPE_SAFE, ?SEQUENCE_TABLE, Key).
+
+-spec cached_sequence_create(sequence_key()) -> ok.
+cached_sequence_create(Key) ->
+    Start = get_env(cache_start, ?DEFAULT_CACHE_START),
+    cached_sequence_create(Key, Start).
+
+-spec cached_sequence_create(sequence_key(), sequence_value()) -> ok.
+cached_sequence_create(Key, Start) when Start >= 0 ->
+    gen_server:call(?SEQUENCE_CACHE, {set_value, Key, Start}).
+
+-spec cached_sequence_set_value(sequence_key(), sequence_value()) -> ok.
+cached_sequence_set_value(Key, Start) when Start >= 0 ->
+    cached_sequence_create(Key, Start).
+
+-spec cached_sequence_current_value(sequence_key()) -> sequence_value().
+cached_sequence_current_value(Key) ->
+    gen_server:call(?SEQUENCE_CACHE, {current_value, Key}).
+
+-spec cached_sequence_next_value(sequence_key()) -> sequence_value().
+cached_sequence_next_value(Key) ->
+    Increment = get_env(cache_increment, ?DEFAULT_CACHE_INCREMENT),
+    cached_sequence_next_value(Key, Increment).
+
+-spec cached_sequence_next_value(sequence_key(), sequence_value()) -> sequence_value().
+cached_sequence_next_value(Key, Increment) when is_integer(Increment) ->
+    gen_server:call(?SEQUENCE_CACHE, {next_value, Key, Increment}).
+
+-spec cached_sequence_delete(sequence_key()) -> ok.
+cached_sequence_delete(Key) ->
+    gen_server:call(?SEQUENCE_CACHE, {delete, Key}).
+
+-spec cached_sequence_all_sequences() -> [#sequence_cache{}].
+cached_sequence_all_sequences() ->
+    gen_server:call(?SEQUENCE_CACHE, {all_sequences}).
+
 -spec get_record_fields(table_key()) -> list().
 get_record_fields(RecordName) ->
     fields(RecordName).
+
+
+%% ------------------------------------------------------------------
+%% Internal Function Definitions
+%% ------------------------------------------------------------------
+-spec get_sequence_value([{sequence_key(), sequence_value()}]) -> sequence_value().
+get_sequence_value([]) ->
+    undefined;
+get_sequence_value([{_Table, _Key, Value}]) ->
+    Value;
+get_sequence_value(_) ->
+    undefined.
 
 
