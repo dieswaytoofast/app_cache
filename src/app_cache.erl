@@ -39,10 +39,11 @@
         ]).
 
 %% Data accessor APIs
--export([key_exists/2, get_data_from_index/3, get_data/2, get_last_entered_data/1, get_after/2, 
+-export([key_exists/2, get_data_from_index/3, get_data/2, get_data_by_last_key/1, get_last_n_entries/2,
+         get_first_n_entries/2, get_after/2, 
          set_data/1, remove_data/2]).
--export([key_exists/3, get_data_from_index/4, get_data/3, get_last_entered_data/2, get_after/3, 
-         get_all_data/1, get_all_data/2,
+-export([key_exists/3, get_data_from_index/4, get_data/3, get_data_by_last_key/2, get_after/3,
+         get_last_n_entries/3, get_first_n_entries/3, get_all_data/1, get_all_data/2,
          set_data/2, remove_data/3, remove_record/1, remove_record/2]).
 -export([sequence_create/1, sequence_create/2, sequence_set_value/2, sequence_current_value/1, 
          sequence_next_value/1, sequence_next_value/2, sequence_delete/1]).
@@ -283,13 +284,29 @@ get_data_from_index(Table, Key, IndexField) ->
 get_data_from_index(TransactionType, Table, Key, IndexField) ->
     app_cache_processor:read_data_from_index(TransactionType, Table, Key, IndexField).
 
--spec get_last_entered_data(Table::table()) -> any().
-get_last_entered_data(Table) ->
-    get_last_entered_data(?TRANSACTION_TYPE_SAFE, Table).
+-spec get_data_by_last_key(Table::table()) -> any().
+get_data_by_last_key(Table) ->
+    get_data_by_last_key(?TRANSACTION_TYPE_SAFE, Table).
 
--spec get_last_entered_data(transaction_type(), Table::table()) -> any().
-get_last_entered_data(TransactionType, Table) ->
-    app_cache_processor:read_last_entered_data(TransactionType, Table).
+-spec get_data_by_last_key(transaction_type(), Table::table()) -> any().
+get_data_by_last_key(TransactionType, Table) ->
+    app_cache_processor:read_data_by_last_key(TransactionType, Table).
+
+-spec get_last_n_entries(Table::table(), pos_integer()) -> any().
+get_last_n_entries(Table, N) ->
+    get_last_n_entries(?TRANSACTION_TYPE_SAFE, Table, N).
+
+-spec get_last_n_entries(transaction_type(), Table::table(), pos_integer()) -> any().
+get_last_n_entries(TransactionType, Table, N) ->
+    app_cache_processor:read_last_n_entries(TransactionType, Table, N).
+
+-spec get_first_n_entries(Table::table(), pos_integer()) -> any().
+get_first_n_entries(Table, N) ->
+    get_first_n_entries(?TRANSACTION_TYPE_SAFE, Table, N).
+
+-spec get_first_n_entries(transaction_type(), Table::table(), pos_integer()) -> any().
+get_first_n_entries(TransactionType, Table, N) ->
+    app_cache_processor:read_first_n_entries(TransactionType, Table, N).
 
 %% Get data after (in erlang term order) a value
 -spec get_after(table(), table_key()) -> any().

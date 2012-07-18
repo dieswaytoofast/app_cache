@@ -33,9 +33,11 @@
 -export([check_key_exists/3]).
 -export([read_data/3]).
 -export([read_data_from_index/4]).
--export([read_last_entered_data/2]).
+-export([read_data_by_last_key/2]).
 -export([read_after/3]).
 -export([read_all_data/2]).
+-export([read_last_n_entries/3]).
+-export([read_first_n_entries/3]).
 -export([write_data/2]).
 -export([delete_data/3]).
 -export([delete_record/2]).
@@ -398,13 +400,16 @@ read_data_from_index(TransactionType, Table, Key, IndexField) ->
     {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
     Fields = table_fields(Table),
     IndexPosition = get_index(IndexField, Fields),
+    lager:debug("IndexField:~p, Fields:~p, Table:~p~n", [IndexField, Fields, Table]),
     CachedData = cache_entry_from_index(TransactionType, Table, Key, IndexPosition),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
--spec read_last_entered_data(transaction_type(), table()) -> list().
-read_last_entered_data(TransactionType, Table) ->
+%% @doc It returns the largest key in the table
+%%      This assumes that the table is of type ordered_set. 
+-spec read_data_by_last_key(transaction_type(), table()) -> list().
+read_data_by_last_key(TransactionType, Table) ->
     {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_last_entered_entry(TransactionType, Table),
+    CachedData = cache_last_key_entry(TransactionType, Table),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
 -spec read_after(transaction_type(), table(), table_key()) -> list().
@@ -421,7 +426,21 @@ read_all_data(TransactionType, Table) ->
     CachedData = cache_select_all(TransactionType, Table),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
+-spec read_last_n_entries(transaction_type(), table(), pos_integer()) -> list().
+read_last_n_entries(TransactionType, Table, N) when N > 0 ->
+    % return only the valid values
+    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
+    CachedData = cache_select_last_n_entries(TransactionType, Table, N),
+    lager:debug("Cach:~p~n", [CachedData]),
+    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
+-spec read_first_n_entries(transaction_type(), table(), pos_integer()) -> list().
+read_first_n_entries(TransactionType, Table, N) when N > 0 ->
+    % return only the valid values
+    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
+    CachedData = cache_select_first_n_entries(TransactionType, Table, N),
+    lager:debug("Cach:~p~n", [CachedData]),
+    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
 -spec write_data(transaction_type(), any()) -> ok | error().
 write_data(TransactionType, Data) ->
@@ -500,9 +519,9 @@ cache_entry_from_index(?TRANSACTION_TYPE_DIRTY, Table, Key, IndexPosition) ->
     mnesia:dirty_index_read(Table, Key, IndexPosition + 1).
 
 
--spec cache_last_entered_entry(transaction_type(), table()) -> [any()].
-cache_last_entered_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
-    ReadFun = fun () -> mnesia:first(Table) end,
+-spec cache_last_key_entry(transaction_type(), table()) -> [any()].
+cache_last_key_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
+    ReadFun = fun () -> mnesia:last(Table) end,
     case mnesia:transaction(ReadFun) of
         {atomic,'$end_of_table'} ->
             [];
@@ -511,13 +530,50 @@ cache_last_entered_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-cache_last_entered_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
-    case mnesia:dirty_first(Table) of
+cache_last_key_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
+    case mnesia:dirty_last(Table) of
         '$end_of_table' ->
             [];
         Key ->
             cache_entry(TransactionType, Table, Key)
     end.
+
+
+-spec cache_select_last_n_entries(transaction_type(), table(), pos_integer()) -> [any()].
+cache_select_last_n_entries(TransactionType = ?TRANSACTION_TYPE_SAFE, Table, N) ->
+    ReadFun = fun () -> 
+            case mnesia:last(Table) of
+                '$end_of_table' ->
+                    [];
+                Key ->
+                    get_lifo_data(TransactionType, Table, Key, mnesia:read(Table, Key), N-1)
+            end
+    end,
+    case mnesia:transaction(ReadFun) of
+        {atomic,[]} ->
+            [];
+        {atomic, Data} ->
+            Data;
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end;
+
+
+cache_select_last_n_entries(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table, N) ->
+    case mnesia:dirty_last(Table) of
+        '$end_of_table' ->
+            [];
+        Key ->
+            get_lifo_data(TransactionType, Table, Key, mnesia:dirty_read(Table, Key), N-1)
+    end.
+
+-spec cache_select_first_n_entries(transaction_type(), table(), pos_integer()) -> [any()].
+cache_select_first_n_entries(TransactionType, Table, N) ->
+    MatchHead = '$1',
+    Guard =  [],
+    Result = ['$_'],
+    cache_select(TransactionType, Table, undefined, [{MatchHead, Guard, Result}], N).
+
 
 -spec cache_select_all(transaction_type(), table()) -> [any()].
 cache_select_all(TransactionType, Table) ->
@@ -545,6 +601,16 @@ cache_select(?TRANSACTION_TYPE_SAFE, Table, _After, MatchSpec) ->
 cache_select(?TRANSACTION_TYPE_DIRTY, Table, _After, MatchSpec) ->
     mnesia:dirty_select(Table, MatchSpec).
 
+-spec cache_select(transaction_type(), table(), table_key(), any(), pos_integer()) -> [any()].
+cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
+    SelectFun = fun () -> mnesia:select(Table, MatchSpec, N, read) end,
+    case mnesia:transaction(SelectFun) of
+        {atomic, {Data, _}} ->
+            Data;
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end.
+
 -spec get_ttl_and_field_index(table(), [#app_metatable{}]) -> time_to_live().
 get_ttl_and_field_index(Table, Tables) -> 
     #app_metatable{time_to_live = TTL, fields = Fields} = table_info(Table, Tables),
@@ -571,6 +637,7 @@ current_time_in_gregorian_seconds() ->
 filter_data_by_ttl(?INFINITY, _, Data) ->
     Data;
 filter_data_by_ttl(TableTTL, TTLFieldIndex, Data) ->
+    lager:debug("1:~p, 2:~p, 3:~p~n", [TableTTL, TTLFieldIndex, Data]),
     CurrentTime = current_time_in_gregorian_seconds(),
     lists:filter(fun(X) ->
                 % '+ 1' because we're looking at the tuple, not the record
@@ -619,3 +686,22 @@ get_timestamped_data(TTLFieldIndex, Data) ->
     CurrentTime = current_time_in_gregorian_seconds(),
     setelement(TTLFieldIndex + 1, Data, CurrentTime).
 
+%% @doc Get the last N entries from the ordered set
+-spec get_lifo_data(transaction_type(), table(), table_key(), list(), integer()) -> list().
+get_lifo_data(_TransactionType, _Table, _Key, Acc, N) when N =< 0 -> lists:reverse(Acc);
+get_lifo_data(TransactionType = ?TRANSACTION_TYPE_SAFE, Table, Key, Acc, N) ->
+    case mnesia:prev(Table, Key) of
+        '$end_of_table' ->
+            lists:reverse(Acc);
+        NKey ->
+            get_lifo_data(TransactionType, Table, NKey, lists:flatten(mnesia:read(Table, NKey), Acc), N-1)
+    end;
+get_lifo_data(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table, Key, Acc, N) ->
+    lager:debug("Key:~p, N:~p~n", [Key, N]),
+    case mnesia:dirty_prev(Table, Key) of
+        '$end_of_table' ->
+            lists:reverse(Acc);
+        NKey ->
+    lager:debug("NKey:~p~n", [NKey]),
+            get_lifo_data(TransactionType, Table, NKey, lists:flatten(mnesia:dirty_read(Table, NKey), Acc), N-1)
+    end.

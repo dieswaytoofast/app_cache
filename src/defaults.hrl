@@ -83,4 +83,6 @@
             key,
             timestamp,
             value,
+            foo,
+            bar,
             name}).

@@ -53,13 +53,17 @@
                 secondary_index_fields = []
             }).
 -define(KEY, foo).
--define(KEY2, foo).
+-define(KEY2, foo2).
+-define(KEY3, foo3).
 -define(VALUE, bar).
 -define(VALUE2, bar2).
+-define(VALUE3, bar3).
 -define(NAME, baz).
 -define(NAME2, baz2).
+-define(NAME3, baz3).
 -define(RECORD, {test_table_1, ?KEY, undefined, ?VALUE, ?NAME}).
 -define(RECORD2, {test_table_1, ?KEY2, undefined, ?VALUE2, ?NAME2}).
+-define(RECORD3, {test_table_1, ?KEY3, undefined, ?VALUE3, ?NAME3}).
 -define(RECORD30, {test_table_2, ?KEY, undefined, ?VALUE, ?NAME}).
 -define(RECORD31, {test_table_2, ?KEY, undefined, ?VALUE2, ?NAME2}).
 
@@ -70,6 +74,22 @@
 %%
 %% Test Descriptions
 %%
+table_get_first_n_entries_test_() ->
+    [{"table_first_n_entries",
+     ?setup(fun t_get_first_n_entries/1)}].
+
+table_get_first_n_entries_dirty_test_() ->
+    [{"table_first_n_entries_dirty",
+     ?setup(fun t_get_first_n_entries_dirty/1)}].
+
+table_get_last_n_entries_test_() ->
+    [{"table_last_n_entries",
+     ?setup(fun t_get_last_n_entries/1)}].
+
+table_get_last_n_entries_dirty_test_() ->
+    [{"table_last_n_entries_dirty",
+     ?setup(fun t_get_last_n_entries_dirty/1)}].
+
 table_delete_record_test_() ->
     [{"table_delete_record",
      ?setup(fun t_delete_record/1)}].
@@ -392,14 +412,42 @@ t_get_data_from_index_dirty(_In) ->
 t_get_last_entered_data(_In) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
-    [Data] = app_cache:get_last_entered_data(?TEST_TABLE_1),
+    [Data] = app_cache:get_data_by_last_key(?TEST_TABLE_1),
     ?_assertEqual(?VALUE2, Data#test_table_1.value).
 
 t_get_last_entered_data_dirty(_In) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
-    [Data] = app_cache:get_last_entered_data(dirty, ?TEST_TABLE_1),
+    [Data] = app_cache:get_data_by_last_key(dirty, ?TEST_TABLE_1),
     ?_assertEqual(?VALUE2, Data#test_table_1.value).
+
+t_get_last_n_entries(_In) ->
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    ok = app_cache:set_data(?RECORD3),
+    [_H|[T]] = app_cache:get_last_n_entries(?TEST_TABLE_1, 2),
+    ?_assertEqual(?VALUE2, T#test_table_1.value).
+
+t_get_last_n_entries_dirty(_In) ->
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    ok = app_cache:set_data(?RECORD3),
+    [_H|[T]] = app_cache:get_last_n_entries(dirty, ?TEST_TABLE_1, 2),
+    ?_assertEqual(?VALUE2, T#test_table_1.value).
+
+t_get_first_n_entries(_In) ->
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    ok = app_cache:set_data(?RECORD3),
+    [_H|[T]] = app_cache:get_first_n_entries(?TEST_TABLE_1, 2),
+    ?_assertEqual(?VALUE2, T#test_table_1.value).
+
+t_get_first_n_entries_dirty(_In) ->
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    ok = app_cache:set_data(?RECORD3),
+    [_H|[T]] = app_cache:get_first_n_entries(dirty, ?TEST_TABLE_1, 2),
+    ?_assertEqual(?VALUE2, T#test_table_1.value).
 
 t_key_exists(_In) ->
     false = app_cache:key_exists(?TEST_TABLE_1, ?KEY),
