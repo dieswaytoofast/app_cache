@@ -400,7 +400,6 @@ read_data_from_index(TransactionType, Table, Key, IndexField) ->
     {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
     Fields = table_fields(Table),
     IndexPosition = get_index(IndexField, Fields),
-    lager:debug("IndexField:~p, Fields:~p, Table:~p~n", [IndexField, Fields, Table]),
     CachedData = cache_entry_from_index(TransactionType, Table, Key, IndexPosition),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
@@ -431,7 +430,6 @@ read_last_n_entries(TransactionType, Table, N) when N > 0 ->
     % return only the valid values
     {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
     CachedData = cache_select_last_n_entries(TransactionType, Table, N),
-    lager:debug("Cach:~p~n", [CachedData]),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
 -spec read_first_n_entries(transaction_type(), table(), pos_integer()) -> list().
@@ -439,7 +437,6 @@ read_first_n_entries(TransactionType, Table, N) when N > 0 ->
     % return only the valid values
     {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
     CachedData = cache_select_first_n_entries(TransactionType, Table, N),
-    lager:debug("Cach:~p~n", [CachedData]),
     filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
 
 -spec write_data(transaction_type(), any()) -> ok | error().
@@ -637,7 +634,6 @@ current_time_in_gregorian_seconds() ->
 filter_data_by_ttl(?INFINITY, _, Data) ->
     Data;
 filter_data_by_ttl(TableTTL, TTLFieldIndex, Data) ->
-    lager:debug("1:~p, 2:~p, 3:~p~n", [TableTTL, TTLFieldIndex, Data]),
     CurrentTime = current_time_in_gregorian_seconds(),
     lists:filter(fun(X) ->
                 % '+ 1' because we're looking at the tuple, not the record
@@ -697,11 +693,9 @@ get_lifo_data(TransactionType = ?TRANSACTION_TYPE_SAFE, Table, Key, Acc, N) ->
             get_lifo_data(TransactionType, Table, NKey, lists:flatten(mnesia:read(Table, NKey), Acc), N-1)
     end;
 get_lifo_data(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table, Key, Acc, N) ->
-    lager:debug("Key:~p, N:~p~n", [Key, N]),
     case mnesia:dirty_prev(Table, Key) of
         '$end_of_table' ->
             lists:reverse(Acc);
         NKey ->
-    lager:debug("NKey:~p~n", [NKey]),
             get_lifo_data(TransactionType, Table, NKey, lists:flatten(mnesia:dirty_read(Table, NKey), Acc), N-1)
     end.
