@@ -27,6 +27,9 @@
 
 -export([start_link/0]).
 
+%% used to initialize the sequence cache w/ a Dict
+-export([reset_cache/0]).
+
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
 %% ------------------------------------------------------------------
@@ -54,6 +57,11 @@
 start_link() ->
     gen_server:start_link({local, ?SEQUENCE_CACHE}, ?MODULE, [], []).
 
+%% @doc Reset the cache from the sequence table
+-spec reset_cache() -> ok.
+reset_cache() ->
+    gen_server:cast(?SERVER, {reset_cache}).
+
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
@@ -64,15 +72,8 @@ start_link() ->
 -spec init([]) -> {ok, #state{}}.
 init([]) ->
     app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
-    Dict = 
-    lists:foldl(fun(#sequence_table{key = Key, value = Value}, _Acc) ->
-                    UpperBoundIncrement = ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,
-                    app_cache:sequence_next_value(Key, UpperBoundIncrement),
-                    dict:store(Key, #sequence_cache{key = Key,
-                                                    cached_value = Value,
-                                                    upper_bound = Value}, dict:new())
-            end, dict:new(), app_cache:get_all_data(?SEQUENCE_TABLE)),
-    {ok, #state{sequences = Dict}}.
+    reset_cache(),
+    {ok, #state{}}.
 
 
 handle_call({create, Key, Start, UpperBoundIncrement}, _From, State) ->
@@ -123,6 +124,10 @@ handle_call({all_sequences}, _From, State) ->
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
+
+handle_cast({reset_cache, Dict}, _State) ->
+    reset_cache_internal(),
+    {noreply, #state{sequences = Dict}};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -190,3 +195,13 @@ initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
                                     cached_value = Value,
                                     upper_bound = Value}, Dict).
         
+%% @doc return a Dict with all the data in the sequence table
+-spec reset_cache_internal() -> any().
+reset_cache_internal() ->
+    lists:foldl(fun(#sequence_table{key = Key, value = Value}, _Acc) ->
+                    UpperBoundIncrement = ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,
+                    app_cache:sequence_next_value(Key, UpperBoundIncrement),
+                    dict:store(Key, #sequence_cache{key = Key,
+                                                    cached_value = Value,
+                                                    upper_bound = Value}, dict:new())
+            end, dict:new(), app_cache:get_all_data(?SEQUENCE_TABLE)).
