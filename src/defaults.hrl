@@ -14,6 +14,7 @@
 
 %% Errors
 -define(NO_SUCH_SEQUENCE, no_such_sequence).
+-define(INVALID_TABLE, invalid_table).
 
 -define(PROCESSOR,     app_cache_processor).
 -define(SCAVENGER,     app_cache_scavenger).

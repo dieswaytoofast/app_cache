@@ -380,72 +380,115 @@ table_fields(Table, Tables) ->
 
 -spec check_key_exists(transaction_type(), table(), table_key()) -> boolean().
 check_key_exists(TransactionType, Table, Key) ->
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_entry(TransactionType, Table, Key),
-    case filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData) of
-        [_Data] ->
-            true;
-        _ ->
-            false
+    % return only the valid values
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            CachedData = cache_entry(TransactionType, Table, Key),
+            case filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData) of
+                [_Data] ->
+                    true;
+                _ ->
+                    false
+            end
     end.
 
 -spec read_data(transaction_type(), table(), table_key()) -> list().
 read_data(TransactionType, Table, Key) ->
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_entry(TransactionType, Table, Key),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    % return only the valid values
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            CachedData = cache_entry(TransactionType, Table, Key),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 -spec read_data_from_index(transaction_type(), table(), table_key(), table_key()) -> list().
 read_data_from_index(TransactionType, Table, Key, IndexField) ->
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    Fields = table_fields(Table),
-    IndexPosition = get_index(IndexField, Fields),
-    CachedData = cache_entry_from_index(TransactionType, Table, Key, IndexPosition),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    % return only the valid values
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            Fields = table_fields(Table),
+            IndexPosition = get_index(IndexField, Fields),
+            CachedData = cache_entry_from_index(TransactionType, Table, Key, IndexPosition),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 %% @doc It returns the largest key in the table
 %%      This assumes that the table is of type ordered_set. 
 -spec read_data_by_last_key(transaction_type(), table()) -> list().
 read_data_by_last_key(TransactionType, Table) ->
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_last_key_entry(TransactionType, Table),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    % return only the valid values
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            CachedData = cache_last_key_entry(TransactionType, Table),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 -spec read_after(transaction_type(), table(), table_key()) -> list().
 read_after(TransactionType, Table, After) ->
     % return only the valid values
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_select(TransactionType, Table, After),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            get_ttl_and_field_index(Table),
+            CachedData = cache_select(TransactionType, Table, After),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 -spec read_all_data(transaction_type(), table()) -> list().
 read_all_data(TransactionType, Table) ->
     % return only the valid values
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_select_all(TransactionType, Table),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            CachedData = cache_select_all(TransactionType, Table),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 -spec read_last_n_entries(transaction_type(), table(), pos_integer()) -> list().
 read_last_n_entries(TransactionType, Table, N) when N > 0 ->
     % return only the valid values
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_select_last_n_entries(TransactionType, Table, N),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            CachedData = cache_select_last_n_entries(TransactionType, Table, N),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 -spec read_first_n_entries(transaction_type(), table(), pos_integer()) -> list().
 read_first_n_entries(TransactionType, Table, N) when N > 0 ->
     % return only the valid values
-    {TableTTL, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    CachedData = cache_select_first_n_entries(TransactionType, Table, N),
-    filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData).
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            CachedData = cache_select_first_n_entries(TransactionType, Table, N),
+            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+    end.
 
 -spec write_data(transaction_type(), any()) -> ok | error().
 write_data(TransactionType, Data) ->
     Table = element(1, Data),
-    {_, TTLFieldIndex} = get_ttl_and_field_index(Table),
-    % '+ 1' because we're looking at the tuple, not the record
-    TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
-    write_timestamped_data(TransactionType, TimestampedData).
+    % return only the valid values
+    case get_ttl_and_field_index(Table) of
+        {error, _} = Error ->
+            Error;
+        {_, TTLFieldIndex} -> 
+            % '+ 1' because we're looking at the tuple, not the record
+            TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
+            write_timestamped_data(TransactionType, TimestampedData)
+    end.
+
 -spec write_timestamped_data(transaction_type(), any()) -> ok | error().
 write_timestamped_data(?TRANSACTION_TYPE_SAFE, TimestampedData) -> 
     WriteFun = fun () -> mnesia:write(TimestampedData) end,
@@ -610,9 +653,14 @@ cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
 
 -spec get_ttl_and_field_index(table(), [#app_metatable{}]) -> time_to_live().
 get_ttl_and_field_index(Table, Tables) -> 
-    #app_metatable{time_to_live = TTL, fields = Fields} = table_info(Table, Tables),
-    FieldIndex = get_index(?TIMESTAMP, Fields),
-    {TTL, FieldIndex}.
+    try
+        #app_metatable{time_to_live = TTL, fields = Fields} = table_info(Table, Tables),
+        FieldIndex = get_index(?TIMESTAMP, Fields),
+        {TTL, FieldIndex}
+    catch
+        _:_ ->
+            {error, ?INVALID_TABLE}
+    end.
 
 
 -spec is_cache_valid(timestamp() | ?INFINITY, last_update() | ?DEFAULT_TIMESTAMP, timestamp()) -> boolean().
