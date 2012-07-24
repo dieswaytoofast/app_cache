@@ -29,6 +29,9 @@
 -export([start_link/0, scavenge/1, reset_timer/1, expired_entries/1,
          get_timers/0]).
 
+%% used to initialize the scavenger table
+-export([reset_cache/0]).
+
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
 %% ------------------------------------------------------------------
@@ -68,6 +71,10 @@ get_timers() ->
 reset_timer(Table) ->
     gen_server:cast(?SERVER, {reset_timer, Table}).
 
+%% @doc Reset the cache 
+-spec reset_cache() -> ok.
+reset_cache() ->
+    gen_server:cast(?SERVER, {reset_cache}).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -78,13 +85,8 @@ reset_timer(Table) ->
 %%      tables according to each table's expiration time.
 -spec init([]) -> {ok, #state{}}.
 init([]) ->
-    %% Retrieve the list of cache tables and create a timer for each of them
-    %% using the table's time-to-live as the timer interval.
-    {atomic, Metatables} = mnesia:transaction(fun() -> mnesia:match_object( #app_metatable{_ = '_'}) end ),
-    Timers = lists:foldl(fun(#app_metatable{table = Table, time_to_live = TimeToLive}, Acc) ->
-                    get_new_timer(Table, TimeToLive) ++ Acc
-            end, [], Metatables),
-    {ok, #state{timers = Timers}}.
+    reset_cache(),
+    {ok, #state{}}.
 
 handle_call({get_timers}, _From, #state{timers = Timers} = State) ->
     {reply, Timers, State};
@@ -92,6 +94,10 @@ handle_call({get_timers}, _From, #state{timers = Timers} = State) ->
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
+
+handle_cast({reset_cache}, _State) ->
+    Timers = reset_cache_internal(),
+    {noreply, #state{timers = Timers}};
 
 handle_cast({reset_timer, Table}, #state{timers = Timers} = State) ->
     {_Response, FinalTimers} = case mnesia:transaction(fun() -> mnesia:read(?METATABLE, Table) end) of
@@ -133,6 +139,15 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+%% @doc return a List of all the applicable timers
+-spec reset_cache_internal() -> any().
+reset_cache_internal() ->
+    %% Retrieve the list of cache tables and create a timer for each of them
+    %% using the table's time-to-live as the timer interval.
+    {atomic, Metatables} = mnesia:transaction(fun() -> mnesia:match_object( #app_metatable{_ = '_'}) end ),
+    lists:foldl(fun(#app_metatable{table = Table, time_to_live = TimeToLive}, Acc) ->
+                    get_new_timer(Table, TimeToLive) ++ Acc
+            end, [], Metatables).
 
 -spec expired_entries(table()) -> [term()].
 expired_entries(Table) ->

@@ -71,7 +71,6 @@ reset_cache() ->
 %%      tables according to each table's expiration time.
 -spec init([]) -> {ok, #state{}}.
 init([]) ->
-    app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
     reset_cache(),
     {ok, #state{}}.
 
@@ -125,8 +124,8 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({reset_cache, Dict}, _State) ->
-    reset_cache_internal(),
+handle_cast({reset_cache}, _State) ->
+    Dict = reset_cache_internal(),
     {noreply, #state{sequences = Dict}};
 
 handle_cast(_Msg, State) ->
@@ -198,6 +197,7 @@ initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
 %% @doc return a Dict with all the data in the sequence table
 -spec reset_cache_internal() -> any().
 reset_cache_internal() ->
+    app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
     lists:foldl(fun(#sequence_table{key = Key, value = Value}, _Acc) ->
                     UpperBoundIncrement = ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,
                     app_cache:sequence_next_value(Key, UpperBoundIncrement),
