@@ -87,7 +87,7 @@ start_link(Nodes) ->
 
 -spec get_ttl_and_field_index(table()) -> {timestamp(), table_key_position()}.
 get_ttl_and_field_index(Table) ->
-    gen_server:call(?PROCESSOR, {get_ttl_and_field_index, Table}).
+    gen_server:call(?SERVER, {get_ttl_and_field_index, Table}).
 
 % TODO make this dependant on the node
 -spec upgrade_metatable() -> {atomic, ok} | {aborted, Reason :: any()}.
@@ -113,23 +113,23 @@ upgrade_table(Table, _OldVersion, _NewVersion, Fields) ->
 
 -spec get_read_transform_function(table()) -> function() | undefined.
 get_read_transform_function(Table) ->
-    gen_server:call(?PROCESSOR, {get_read_transform_function, Table}).
+    gen_server:call(?SERVER, {get_read_transform_function, Table}).
 
 -spec get_write_transform_function(table()) -> function() | undefined.
 get_write_transform_function(Table) ->
-    gen_server:call(?PROCESSOR, {get_write_transform_function, Table}).
+    gen_server:call(?SERVER, {get_write_transform_function, Table}).
 
 -spec get_refresh_function(table()) -> function() | undefined.
 get_refresh_function(Table) ->
-    gen_server:call(?PROCESSOR, {get_refresh_function, Table}).
+    gen_server:call(?SERVER, {get_refresh_function, Table}).
 
 -spec get_persist_function(table()) -> function() | undefined.
 get_persist_function(Table) ->
-    gen_server:call(?PROCESSOR, {get_persist_function, Table}).
+    gen_server:call(?SERVER, {get_persist_function, Table}).
 
 -spec table_fields(table()) -> table_fields().
 table_fields(Table) ->
-    gen_server:call(?PROCESSOR, {table_fields, Table}).
+    gen_server:call(?SERVER, {table_fields, Table}).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -140,6 +140,7 @@ init([Nodes]) ->
     try
         init_metatable_internal(Nodes),
         Tables = load_metatable_internal(),
+        lager:debug("Tables:~p~n", [Tables]),
         {ok, #state{tables = Tables}}
     catch
         _:Error ->
@@ -147,9 +148,10 @@ init([Nodes]) ->
             {stop, Error}
     end.
 
-handle_call({cache_init, Nodes, Tables}, _From, State) ->
-    Response = cache_init_internal(Nodes, Tables),
-    reset_scavenger(Tables),
+handle_call({cache_init, Nodes, InTables}, _From, State) ->
+    Response = cache_init_internal(Nodes, InTables),
+    reset_scavenger(InTables),
+    Tables = load_metatable_internal(),
     {reply, Response, State#state{tables = Tables}};
 
 handle_call({init_metatable, Nodes}, _From, State) ->
@@ -214,6 +216,7 @@ handle_call({set_persist_function, Table, Function}, _From, State) ->
     {reply, Response, State#state{tables = Tables}};
 
 handle_call({table_info, Table}, _From, State) ->
+    lager:debug("State:~p~n", [State]),
     Response = table_info(Table, State#state.tables),
     {reply, Response, State};
 
@@ -504,6 +507,7 @@ table_fields(Table, Tables) ->
         #app_metatable{fields = Fields} ->
             Fields;
         false ->
+            lager:debug("Table:~p~n, Tables:~p~n", [Table, Tables]),
             []
     end.
 
