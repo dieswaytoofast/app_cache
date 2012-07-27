@@ -15,6 +15,8 @@
 %% Errors
 -define(NO_SUCH_SEQUENCE, no_such_sequence).
 -define(INVALID_TABLE, invalid_table).
+-define(INVALID_PERSIST_FUNCTION, invalid_persist_function).
+-define(PERSIST_FAILURE, persist_failure).
 
 -define(PROCESSOR,     app_cache_processor).
 -define(SCAVENGER,     app_cache_scavenger).
@@ -47,6 +49,10 @@
           type = ?DEFAULT_TYPE                              :: table_type(),
           fields = []                                       :: [table_key()],
           secondary_index_fields = []                       :: [table_key()],
+          read_transform_function                           :: function(),
+          write_transform_function                          :: function(),
+          refresh_function                                  :: table_helper(),
+          persist_function                                  :: table_helper(),
           last_update                                       :: non_neg_integer(),
           reason                                            :: any(),
           extras                                            :: any()

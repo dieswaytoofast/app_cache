@@ -35,7 +35,10 @@
          update_table_time_to_live/2,
          last_update_to_datetime/1, current_time_in_gregorian_seconds/0,
          cache_time_to_live/1, get_ttl_and_field_index/1,
-         get_record_fields/1
+         get_record_fields/1,
+         set_read_transform_function/2, set_write_transform_function/2,
+         set_refresh_function/2,
+         set_persist_function/2
         ]).
 
 %% Data accessor APIs
@@ -428,6 +431,23 @@ cached_sequence_delete(Key) ->
 -spec cached_sequence_all_sequences() -> [#sequence_cache{}].
 cached_sequence_all_sequences() ->
     gen_server:call(?SEQUENCE_CACHE, {all_sequences}).
+
+%% Secondary functions
+-spec set_read_transform_function(table(), function()) -> ok | error().
+set_read_transform_function(Table, Function) ->
+    gen_server:call(?PROCESSOR, {set_read_transform_function, Table, Function}).
+
+-spec set_write_transform_function(table(), function()) -> ok | error().
+set_write_transform_function(Table, Function) ->
+    gen_server:call(?PROCESSOR, {set_write_transform_function, Table, Function}).
+
+-spec set_refresh_function(table(), function()) -> ok | error().
+set_refresh_function(Table, Function) ->
+    gen_server:call(?PROCESSOR, {set_refresh_function, Table, Function}).
+
+-spec set_persist_function(table(), function()) -> ok | error().
+set_persist_function(Table, Function) ->
+    gen_server:call(?PROCESSOR, {set_persist_function, Table, Function}).
 
 -spec get_record_fields(table_key()) -> list().
 get_record_fields(RecordName) ->

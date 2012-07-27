@@ -16,7 +16,7 @@
 -author('Mahesh Paolini-Subramanya <mahesh@dieswaytoofast.com>').
 -author('Tom Heinan <me@tomheinan.com>').
 
--compile([{parse_transform, dynarec}]).
+%-compile([{parse_transform, dynarec}]).
 -compile([{parse_transform, lager_transform}]).
 
 -behaviour(gen_server).
@@ -45,6 +45,10 @@
 
 -export([table_fields/1]).
 
+
+-export([get_read_transform_function/1, get_write_transform_function/1]).
+-export([get_refresh_function/1]).
+-export([get_persist_function/1]).
 
 
 %% gen_server APIs
@@ -107,6 +111,22 @@ upgrade_table(Table, _OldVersion, _NewVersion, Fields) ->
     %% Replace 'ignore' with a function that performs the schema upgrade once the schema changes.
     mnesia:transform_table(Table, ignore, Fields, Table).
 
+-spec get_read_transform_function(table()) -> function() | undefined.
+get_read_transform_function(Table) ->
+    gen_server:call(?PROCESSOR, {get_read_transform_function, Table}).
+
+-spec get_write_transform_function(table()) -> function() | undefined.
+get_write_transform_function(Table) ->
+    gen_server:call(?PROCESSOR, {get_write_transform_function, Table}).
+
+-spec get_refresh_function(table()) -> function() | undefined.
+get_refresh_function(Table) ->
+    gen_server:call(?PROCESSOR, {get_refresh_function, Table}).
+
+-spec get_persist_function(table()) -> function() | undefined.
+get_persist_function(Table) ->
+    gen_server:call(?PROCESSOR, {get_persist_function, Table}).
+
 -spec table_fields(table()) -> table_fields().
 table_fields(Table) ->
     gen_server:call(?PROCESSOR, {table_fields, Table}).
@@ -116,6 +136,7 @@ table_fields(Table) ->
 %% ------------------------------------------------------------------
 
 init([Nodes]) ->
+    process_flag(trap_exit, true),
     try
         init_metatable_internal(Nodes),
         Tables = load_metatable_internal(),
@@ -160,6 +181,38 @@ handle_call({create_table, TableInfo, Nodes}, _From, State) ->
     reset_scavenger(TableInfo),
     {reply, Response, State#state{tables = FinalTables}};
 
+handle_call({get_read_transform_function, Table}, _From, State) ->
+    Response = get_read_transform_function(Table, State#state.tables),
+    {reply, Response, State};
+
+handle_call({get_write_transform_function, Table}, _From, State) ->
+    Response = get_write_transform_function(Table, State#state.tables),
+    {reply, Response, State};
+
+handle_call({get_refresh_function, Table}, _From, State) ->
+    Response = get_refresh_function(Table, State#state.tables),
+    {reply, Response, State};
+
+handle_call({get_persist_function, Table}, _From, State) ->
+    Response = get_persist_function(Table, State#state.tables),
+    {reply, Response, State};
+
+handle_call({set_read_transform_function, Table, Function}, _From, State) ->
+    {Response, Tables} = set_read_transform_function(Table, Function, State#state.tables),
+    {reply, Response, State#state{tables = Tables}};
+
+handle_call({set_write_transform_function, Table, Function}, _From, State) ->
+    {Response, Tables} = set_write_transform_function(Table, Function, State#state.tables),
+    {reply, Response, State#state{tables = Tables}};
+
+handle_call({set_refresh_function, Table, Function}, _From, State) ->
+    {Response, Tables} = set_refresh_function(Table, Function, State#state.tables),
+    {reply, Response, State#state{tables = Tables}};
+
+handle_call({set_persist_function, Table, Function}, _From, State) ->
+    {Response, Tables} = set_persist_function(Table, Function, State#state.tables),
+    {reply, Response, State#state{tables = Tables}};
+
 handle_call({table_info, Table}, _From, State) ->
     Response = table_info(Table, State#state.tables),
     {reply, Response, State};
@@ -193,8 +246,8 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-
 handle_info(_Info, State) ->
+    lager:debug("Info:~p~n", [_Info]),
     {noreply, State}.
 
 
@@ -338,6 +391,86 @@ update_table_time_to_live_internal(Table, TimeToLive) ->
 %%  These don't use  mnesia
 %%
 
+
+-spec get_read_transform_function(table(), [#app_metatable{}]) -> function() | undefined.
+get_read_transform_function(Table, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        #app_metatable{read_transform_function = Function} ->
+            Function;
+        false ->
+            undefined
+    end.
+
+-spec get_write_transform_function(table(), [#app_metatable{}]) -> function() | undefined.
+get_write_transform_function(Table, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        #app_metatable{write_transform_function = Function} ->
+            Function;
+        false ->
+            undefined
+    end.
+
+-spec get_refresh_function(table(), [#app_metatable{}]) -> function() | undefined.  
+get_refresh_function(Table, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        #app_metatable{refresh_function = Function} ->
+            Function;
+        false ->
+            undefined
+    end.
+
+-spec get_persist_function(table(), [#app_metatable{}]) -> function() | undefined.
+get_persist_function(Table, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        #app_metatable{persist_function = Function} ->
+            Function;
+        false ->
+            undefined
+    end.
+
+-spec set_read_transform_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+set_read_transform_function(Table, Function, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        Metatable when is_record(Metatable, app_metatable) ->
+            {ok, lists:keyreplace(Table, #app_metatable.table, Tables, 
+                                  Metatable#app_metatable{read_transform_function = Function})};
+        false ->
+            {{error, {?INVALID_TABLE, Table}}, Tables}
+    end.
+
+-spec set_write_transform_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+set_write_transform_function(Table, Function, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        Metatable when is_record(Metatable, app_metatable) ->
+            {ok, lists:keyreplace(Table, #app_metatable.table, Tables, 
+                                  Metatable#app_metatable{write_transform_function = Function})};
+        false ->
+            {{error, {?INVALID_TABLE, Table}}, Tables}
+    end.
+
+
+-spec set_refresh_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+set_refresh_function(Table, Function, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        Metatable when is_record(Metatable, app_metatable) ->
+            {ok, lists:keyreplace(Table, #app_metatable.table, Tables, 
+                                  Metatable#app_metatable{refresh_function = Function})};
+        false ->
+            {{error, {?INVALID_TABLE, Table}}, Tables}
+    end.
+
+
+-spec set_persist_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+set_persist_function(Table, Function, Tables) ->
+    case lists:keyfind(Table, #app_metatable.table, Tables) of
+        Metatable when is_record(Metatable, app_metatable) ->
+            {ok, lists:keyreplace(Table, #app_metatable.table, Tables, 
+                                  Metatable#app_metatable{persist_function = Function})};
+        false ->
+            {{error, {?INVALID_TABLE, Table}}, Tables}
+    end.
+
+
 -spec table_info(table(), [#app_metatable{}]) -> {table_version(), time_to_live(), table_type()} | undefined.
 table_info(Table, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
@@ -386,7 +519,7 @@ check_key_exists(TransactionType, Table, Key) ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
             CachedData = cache_entry(TransactionType, Table, Key),
-            case filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData) of
+            case filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData) of
                 [_Data] ->
                     true;
                 _ ->
@@ -402,7 +535,7 @@ read_data(TransactionType, Table, Key) ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
             CachedData = cache_entry(TransactionType, Table, Key),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 -spec read_data_from_index(transaction_type(), table(), table_key(), table_key()) -> list().
@@ -415,7 +548,7 @@ read_data_from_index(TransactionType, Table, Key, IndexField) ->
             Fields = table_fields(Table),
             IndexPosition = get_index(IndexField, Fields),
             CachedData = cache_entry_from_index(TransactionType, Table, Key, IndexPosition),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 %% @doc It returns the largest key in the table
@@ -428,7 +561,7 @@ read_data_by_last_key(TransactionType, Table) ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
             CachedData = cache_last_key_entry(TransactionType, Table),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 -spec read_after(transaction_type(), table(), table_key()) -> list().
@@ -440,7 +573,7 @@ read_after(TransactionType, Table, After) ->
         {TableTTL, TTLFieldIndex} -> 
             get_ttl_and_field_index(Table),
             CachedData = cache_select(TransactionType, Table, After),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 -spec read_all_data(transaction_type(), table()) -> list().
@@ -451,7 +584,7 @@ read_all_data(TransactionType, Table) ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
             CachedData = cache_select_all(TransactionType, Table),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 -spec read_last_n_entries(transaction_type(), table(), pos_integer()) -> list().
@@ -462,7 +595,7 @@ read_last_n_entries(TransactionType, Table, N) when N > 0 ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
             CachedData = cache_select_last_n_entries(TransactionType, Table, N),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 -spec read_first_n_entries(transaction_type(), table(), pos_integer()) -> list().
@@ -473,7 +606,7 @@ read_first_n_entries(TransactionType, Table, N) when N > 0 ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
             CachedData = cache_select_first_n_entries(TransactionType, Table, N),
-            filter_data_by_ttl(TableTTL, TTLFieldIndex, CachedData)
+            filter_and_update_data(get_read_transform_function(Table), TableTTL, TTLFieldIndex, CachedData)
     end.
 
 -spec write_data(transaction_type(), any()) -> ok | error().
@@ -486,20 +619,41 @@ write_data(TransactionType, Data) ->
         {_, TTLFieldIndex} -> 
             % '+ 1' because we're looking at the tuple, not the record
             TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
-            write_timestamped_data(TransactionType, TimestampedData)
+            TransformedData = transform_data(get_write_transform_function(Table), TimestampedData),
+            persist_data(get_persist_function(Table), TransactionType, TransformedData)
     end.
 
--spec write_timestamped_data(transaction_type(), any()) -> ok | error().
-write_timestamped_data(?TRANSACTION_TYPE_SAFE, TimestampedData) -> 
-    WriteFun = fun () -> mnesia:write(TimestampedData) end,
+-spec persist_data(function(), transaction_type(), any()) -> ok | error().
+persist_data(undefined, TransactionType, Data) ->
+    write_data_to_cache(TransactionType, Data);
+persist_data({sync, Function}, TransactionType, Data) ->
+    try
+        ok = write_data_to_cache(TransactionType, Data),
+        Function(Data)
+    catch
+        _:_ ->
+            Table = element(1, Data),
+            Key = element(2, Data),
+            delete_data(TransactionType, Table, Key),
+            {error, {?PERSIST_FAILURE, Data}}
+    end;
+persist_data({async, Function}, TransactionType, Data) ->
+    write_data_to_cache(TransactionType, Data),
+    proc_lib:spawn_link(fun() -> Function(Data) end);
+persist_data(_, _TransactionType, _Data) ->
+    {error, ?INVALID_PERSIST_FUNCTION}.
+
+-spec write_data_to_cache(transaction_type(), any()) -> ok | error().
+write_data_to_cache(?TRANSACTION_TYPE_SAFE, Data) -> 
+    WriteFun = fun () -> mnesia:write(Data) end,
     case mnesia:transaction(WriteFun) of
         {atomic, ok} ->
             ok;
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-write_timestamped_data(?TRANSACTION_TYPE_DIRTY, TimestampedData) -> 
-    mnesia:dirty_write(TimestampedData).
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, Data) -> 
+    mnesia:dirty_write(Data).
 
 
 -spec delete_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
@@ -677,17 +831,24 @@ is_cache_valid(TableTTL, LastUpdate, CurrentTime) ->
 current_time_in_gregorian_seconds() ->
     calendar:datetime_to_gregorian_seconds(calendar:universal_time()).
 
-
--spec filter_data_by_ttl(TableTTL::timestamp(), table_key_position(), Data::list()) -> any().
-filter_data_by_ttl(?INFINITY, _, Data) ->
-    Data;
-filter_data_by_ttl(TableTTL, TTLFieldIndex, Data) ->
+%%  @doc Filter the data before it is sent back to the user, so that any expired
+%%       records that have not been scavenged are ignored. 
+%%       Also run any transform necessary on the data
+-spec filter_and_update_data(ReadTransformFunction::function(), TableTTL::timestamp(), table_key_position(), Data::list()) -> any().
+filter_and_update_data(Function, ?INFINITY, _, Data) ->
+    transform_data(Function, Data);
+filter_and_update_data(Function, TableTTL, TTLFieldIndex, Data) ->
     CurrentTime = current_time_in_gregorian_seconds(),
-    lists:filter(fun(X) ->
+    lists:flatmap(fun(X) ->
                 % '+ 1' because we're looking at the tuple, not the record
                 LastUpdate = element(TTLFieldIndex + 1, X),
                 %% We store the datetime as seconds in the Gregorian calendar (since Jan 1, 0001 at 00:00:00).
-                is_cache_valid(TableTTL, LastUpdate, CurrentTime)
+                case is_cache_valid(TableTTL, LastUpdate, CurrentTime) of
+                    true ->
+                        [transform_data(Function, X)];
+                    false ->
+                        []
+                end
         end, Data).
 
 %% Only add an index on timestamp if it is relevant
@@ -747,3 +908,11 @@ get_lifo_data(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table, Key, Acc, N) ->
         NKey ->
             get_lifo_data(TransactionType, Table, NKey, lists:flatten(mnesia:dirty_read(Table, NKey), Acc), N-1)
     end.
+
+%% @doc Apply a given function to the record. This should be transparent, i.e., the
+%%      output should be something recognizable as the same record
+-spec transform_data(function() | undefined, any()) -> any().
+transform_data(undefined, Data) -> Data;
+transform_data(Function, Data) ->
+    Function(Data).
+

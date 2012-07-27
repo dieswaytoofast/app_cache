@@ -55,17 +55,21 @@
 -define(KEY, foo).
 -define(KEY2, foo2).
 -define(KEY3, foo3).
+-define(KEY4, foo4).
 -define(VALUE, bar).
 -define(VALUE2, bar2).
 -define(VALUE3, bar3).
+-define(VALUE4, 2).
 -define(NAME, baz).
 -define(NAME2, baz2).
 -define(NAME3, baz3).
+-define(NAME4, baz4).
 -define(RECORD, {test_table_1, ?KEY, undefined, ?VALUE, ?NAME}).
 -define(RECORD2, {test_table_1, ?KEY2, undefined, ?VALUE2, ?NAME2}).
 -define(RECORD3, {test_table_1, ?KEY3, undefined, ?VALUE3, ?NAME3}).
 -define(RECORD30, {test_table_2, ?KEY, undefined, ?VALUE, ?NAME}).
 -define(RECORD31, {test_table_2, ?KEY, undefined, ?VALUE2, ?NAME2}).
+-define(RECORD4, {test_table_1, ?KEY4, undefined, ?VALUE4, ?NAME4}).
 
 %% ------------------------------------------------------------------
 %% Test Function Definitions
@@ -80,14 +84,7 @@ app_cache_test_() ->
      fun start/0,
      fun stop/1,
      fun(_) ->
-                [?debugVal(t_get_first_n_entries()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_first_n_entries_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_last_n_entries()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_last_n_entries_dirty()),
-                 empty_all_tables(),
+                [
                  ?debugVal(t_delete_record()),
                  empty_all_tables(),
                  ?debugVal(t_delete_record_dirty()),
@@ -110,9 +107,29 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_set_data_dirty()),
                  empty_all_tables(),
+                 ?debugVal(t_set_data_with_transform_fun()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_transform_fun_dirty()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_sync_persist_fun1()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_sync_persist_fun1_dirty()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_async_persist_fun1()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_async_persist_fun1_dirty()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_sync_persist_fun2()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_data_with_sync_persist_fun2_dirty()),
+                 empty_all_tables(),
                  ?debugVal(t_get_data()),
                  empty_all_tables(),
                  ?debugVal(t_get_data_dirty()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_data_with_transform_fun()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_data_with_transform_fun_dirty()),
                  empty_all_tables(),
                  ?debugVal(t_get_bag_data()),
                  empty_all_tables(),
@@ -125,6 +142,14 @@ app_cache_test_() ->
                  ?debugVal(t_get_last_entered_data()),
                  empty_all_tables(),
                  ?debugVal(t_get_last_entered_data_dirty()),
+                 empty_all_tables(),
+                ?debugVal(t_get_first_n_entries()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_first_n_entries_dirty()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_last_n_entries()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_last_n_entries_dirty()),
                  empty_all_tables(),
                  ?debugVal(t_key_exists()),
                  empty_all_tables(),
@@ -302,6 +327,54 @@ t_set_data_dirty() ->
     Result = app_cache:set_data(dirty, ?RECORD),
     ?_assertEqual(Result, ok).
 
+t_set_data_with_transform_fun() ->
+    app_cache:set_write_transform_function(?TEST_TABLE_1, fun transform_fun/1),
+    app_cache:set_data(?RECORD4),
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+
+t_set_data_with_transform_fun_dirty() ->
+    app_cache:set_write_transform_function(?TEST_TABLE_1, fun transform_fun/1),
+    app_cache:set_data(dirty, ?RECORD4),
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+
+t_set_data_with_sync_persist_fun1() ->
+    app_cache:set_persist_function(?TEST_TABLE_1, {sync, fun transform_fun/1}),
+    app_cache:set_data(?RECORD4),
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+
+t_set_data_with_sync_persist_fun1_dirty() ->
+    app_cache:set_persist_function(?TEST_TABLE_1, {sync, fun transform_fun/1}),
+    app_cache:set_data(dirty, ?RECORD4),
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+
+t_set_data_with_async_persist_fun1() ->
+    app_cache:set_persist_function(?TEST_TABLE_1, {async, fun transform_fun/1}),
+    app_cache:set_data(?RECORD4),
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+
+t_set_data_with_async_persist_fun1_dirty() ->
+    app_cache:set_persist_function(?TEST_TABLE_1, {sync, fun transform_fun/1}),
+    app_cache:set_data(dirty, ?RECORD4),
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+
+t_set_data_with_sync_persist_fun2() ->
+    app_cache:set_persist_function(?TEST_TABLE_1, {sync, fun(_X) -> erlang:exit(bah) end}),
+    app_cache:set_data(?RECORD4),
+    Result = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Result, []).
+
+t_set_data_with_sync_persist_fun2_dirty() ->
+    app_cache:set_persist_function(?TEST_TABLE_1, {sync, fun(_X) -> erlang:exit(bah) end}),
+    app_cache:set_data(dirty, ?RECORD4),
+    Result = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Result, []).
+
 t_get_data() ->
     ok = app_cache:set_data(?RECORD),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
@@ -311,6 +384,25 @@ t_get_data_dirty() ->
     ok = app_cache:set_data(?RECORD),
     [Data] = app_cache:get_data(dirty, ?TEST_TABLE_1, ?KEY),
     ?_assertEqual(?VALUE, Data#test_table_1.value).
+
+
+t_get_data_with_transform_fun() ->
+    app_cache:set_read_transform_function(?TEST_TABLE_1, fun transform_fun/1),
+    app_cache:set_data(?RECORD4),
+    [CleanData] = mnesia:dirty_read(?TEST_TABLE_1, ?KEY4),
+    OldValue = CleanData#test_table_1.value,
+    OldValue = ?VALUE4,
+    [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+
+t_get_data_with_transform_fun_dirty() ->
+    app_cache:set_read_transform_function(?TEST_TABLE_1, fun transform_fun/1),
+    app_cache:set_data(?RECORD4),
+    [CleanData] = mnesia:dirty_read(?TEST_TABLE_1, ?KEY4),
+    OldValue = CleanData#test_table_1.value,
+    OldValue = ?VALUE4,
+    [Data] = app_cache:get_data(dirty, ?TEST_TABLE_1, ?KEY4),
+    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
 
 t_get_bag_data() ->
     ok = app_cache:set_data(?RECORD30),
@@ -438,6 +530,12 @@ empty_all_tables() ->
 
 empty_table(Table) ->
     DeleteFun = fun() ->
+            app_cache:set_write_transform_function(Table, undefined),
+            app_cache:set_read_transform_function(Table, undefined),
+            app_cache:set_persist_function(Table, undefined),
             [mnesia:delete({Table, Key}) || Key <- mnesia:all_keys(Table)] end,
     mnesia:transaction(DeleteFun).
     
+transform_fun(Record) ->
+    Record#test_table_1{value = 2 * Record#test_table_1.value}.
+

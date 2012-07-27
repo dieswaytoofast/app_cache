@@ -23,4 +23,5 @@
 -type sequence_key()    :: any().
 -type sequence_value()   :: non_neg_integer().
 
--type app_field()                       :: atom().
+-type table_helper()     :: {sync | async, function()}.
+-type app_field()        :: atom().
