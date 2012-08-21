@@ -198,10 +198,11 @@ initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
 -spec reset_cache_internal() -> any().
 reset_cache_internal() ->
     app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
+    Data = app_cache:get_all_data(?SEQUENCE_TABLE),
     lists:foldl(fun(#sequence_table{key = Key, value = Value}, _Acc) ->
                     UpperBoundIncrement = ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,
                     app_cache:sequence_next_value(Key, UpperBoundIncrement),
                     dict:store(Key, #sequence_cache{key = Key,
                                                     cached_value = Value,
                                                     upper_bound = Value}, dict:new())
-            end, dict:new(), app_cache:get_all_data(?SEQUENCE_TABLE)).
+            end, dict:new(), Data).

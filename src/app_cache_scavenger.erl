@@ -49,7 +49,7 @@
 -define(SERVER, ?MODULE).
 
 -record(state, {
-          timers = []
+            timers = dict:new()
          }).
 
 %% ------------------------------------------------------------------
@@ -146,34 +146,48 @@ reset_cache_internal() ->
     %% using the table's time-to-live as the timer interval.
     {atomic, Metatables} = mnesia:transaction(fun() -> mnesia:match_object( #app_metatable{_ = '_'}) end ),
     lists:foldl(fun(#app_metatable{table = Table, time_to_live = TimeToLive}, Acc) ->
-                    get_new_timer(Table, TimeToLive) ++ Acc
-            end, [], Metatables).
+                case get_new_timer(Table, TimeToLive) of
+                    undefined ->
+                        Acc;
+                    Value ->
+                        dict:store(Table, Value, Acc)
+                end
+        end, dict:new(), Metatables).
 
 -spec expired_entries(table()) -> [term()].
 expired_entries(Table) ->
     Now = app_cache:current_time_in_gregorian_seconds(),
-    {TimeToLive, TimestampPosition} = app_cache:get_ttl_and_field_index(Table),
-    MatchHead = '$1',
-    Guard = [{'<', {element, TimestampPosition + 1, '$1'}, Now - TimeToLive}],
-    Result = ['$1'],
-    % Dirty is ok, since this is just garbage-collecting stale data
-    mnesia:dirty_select(Table, [{MatchHead, Guard, Result}]).
+    TableInfo = app_cache:table_info(Table),
+    case app_cache_processor:get_ttl_and_field_index(TableInfo) of
+        {infinity, _} ->
+            [];
+        {TimeToLive, TimestampPosition} ->
+            MatchHead = '$1',
+            Guard = [{'<', {element, TimestampPosition + 1, '$1'}, Now - TimeToLive}],
+            Result = ['$1'],
+            % Dirty is ok, since this is just garbage-collecting stale data
+            mnesia:dirty_select(Table, [{MatchHead, Guard, Result}])
+    end.
 
 %% @doc Deletes and recreates the timer for a given table in the timers list
 -spec update_timers(table(), time_to_live(), list()) -> list().
 update_timers(Table, TimeToLive, Timers) ->
     Timers1 = cancel_old_timer(Table, Timers),
-    NewTimers =  get_new_timer(Table, TimeToLive),
-    NewTimers ++ Timers1.
+    case get_new_timer(Table, TimeToLive) of
+        undefined ->
+            Timers;
+        Value ->
+            dict:store(Table, Value, Timers1)
+    end.
 
 %% @doc Removes a timer entry from the list of timers
 -spec cancel_old_timer(table(), list()) -> list().
 cancel_old_timer(Table, Timers) ->
-    case lists:keytake(Table, 1, Timers) of
-        {value, {Table, _TimeToLive, TimerRef}, NewTimers} ->
+    case dict:find(Table, Timers) of
+        {ok, {_TimeToLive, TimerRef}} ->
             timer:cancel(TimerRef),
-            NewTimers;
-        false ->
+            dict:erase(Table, Timers);
+        error ->
             Timers
     end.
 
@@ -182,9 +196,9 @@ cancel_old_timer(Table, Timers) ->
 get_new_timer(Table, TimeToLive) ->
     case TimeToLive of
         ?INFINITY ->
-            [];
+            undefined;
         _ ->
             {ok, TimerRef} = timer:apply_interval(TimeToLive * ?SCAVENGE_FACTOR, ?SERVER, scavenge, [Table]),
-            [{Table, TimeToLive, TimerRef}]
+            {Table, {TimeToLive, TimerRef}}
     end.
 

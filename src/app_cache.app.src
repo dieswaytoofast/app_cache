@@ -8,6 +8,7 @@
                   stdlib,
                   sasl,
                   mnesia,
+                  timer2,
                   lager
                  ]},
   {mod, {app_cache_app, []}},

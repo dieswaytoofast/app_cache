@@ -17,11 +17,17 @@
 -type table_type()      :: atom().
 -type timestamp()       :: non_neg_integer().
 -type last_update()     :: timestamp().
--type time_to_live()    :: non_neg_integer().
+-type time_to_live()    :: non_neg_integer() | infinity.
 -type table_fields()    :: [table_key()].
 -type transaction_type()    :: safe | dirty.
 -type sequence_key()    :: any().
--type sequence_value()   :: non_neg_integer().
+-type sequence_value()  :: non_neg_integer().
 
--type table_helper()     :: {sync | async, function()}.
--type app_field()        :: atom().
+-type function_identifier() :: {function, function()} | 
+                               {module_and_function, {atom(), atom()}} |
+                               undefined.
+
+-type app_field()       :: atom().
+
+-type refresh_key()       :: {any(), any()}.
+-type function_dict() :: any().

@@ -34,7 +34,7 @@
          table_info/1, table_version/1, table_time_to_live/1, table_fields/1,
          update_table_time_to_live/2,
          last_update_to_datetime/1, current_time_in_gregorian_seconds/0,
-         cache_time_to_live/1, get_ttl_and_field_index/1,
+         cache_time_to_live/1, 
          get_record_fields/1,
          set_read_transform_function/2, set_write_transform_function/2,
          set_refresh_function/2,
@@ -42,17 +42,28 @@
         ]).
 
 %% Data accessor APIs
--export([key_exists/2, get_data_from_index/3, get_data/2, get_data_by_last_key/1, get_last_n_entries/2,
-         get_first_n_entries/2, get_after/2, 
-         set_data/1, remove_data/2]).
--export([key_exists/3, get_data_from_index/4, get_data/3, get_data_by_last_key/2, get_after/3,
-         get_last_n_entries/3, get_first_n_entries/3, get_all_data/1, get_all_data/2,
-         set_data/2, remove_data/3, remove_record/1, remove_record/2]).
--export([sequence_create/1, sequence_create/2, sequence_set_value/2, sequence_current_value/1, 
-         sequence_next_value/1, sequence_next_value/2, sequence_delete/1]).
--export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3, cached_sequence_set_value/2, 
+-export([key_exists/2, 
+         get_data_from_index/3, get_data/2, get_all_data/1, get_data_by_last_key/1, 
+         get_last_n_entries/2, get_first_n_entries/2, 
+         get_after/2, 
+         set_data/1, 
+         remove_data/2, remove_all_data/1, remove_record/1]).
+-export([key_exists/3, 
+         get_data_from_index/4, get_data/3, get_all_data/2, get_data_by_last_key/2, 
+         get_after/3,
+         set_data/2,
+         get_last_n_entries/3, get_first_n_entries/3, 
+         remove_data/3, remove_all_data/2, remove_record/2]).
+
+-export([sequence_create/1, sequence_create/2, 
+         sequence_set_value/2, 
+         sequence_current_value/1, sequence_next_value/1, sequence_next_value/2, 
+         sequence_delete/1]).
+-export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3, 
+         cached_sequence_set_value/2, 
          cached_sequence_current_value/1, cached_sequence_next_value/1, cached_sequence_next_value/2,
-         cached_sequence_delete/1, cached_sequence_all_sequences/0]).
+         cached_sequence_delete/1, 
+         cached_sequence_all_sequences/0]).
 
 
 %% ------------------------------------------------------------------
@@ -225,7 +236,7 @@ upgrade_table(Table, OldVersion, NewVersion, Fields) ->
 
 -spec table_info(table()) -> #app_metatable{} | undefined.
 table_info(Table) ->
-    gen_server:call(?PROCESSOR, {table_info, Table}).
+    app_cache_processor:table_info(Table).
 
 -spec table_version(table()) -> table_version().
 table_version(Table) ->
@@ -245,16 +256,17 @@ current_time_in_gregorian_seconds() ->
 
 -spec cache_time_to_live(table()) -> time_to_live().
 cache_time_to_live(Table) ->
-    {TTL, _} = get_ttl_and_field_index(Table),
-    TTL.
+    TableInfo = table_info(Table),
+    case app_cache_processor:get_ttl_and_field_index(TableInfo) of
+        {error, _} = Error ->
+            Error;
+        {TTL, _} ->
+            TTL
+    end.
 
 -spec last_update_to_datetime(last_update()) -> calendar:datetime().
 last_update_to_datetime(LastUpdate) ->
     calendar:gregorian_seconds_to_datetime(LastUpdate).
-
--spec get_ttl_and_field_index(table()) -> {timestamp(), table_key_position()}.
-get_ttl_and_field_index(Table) ->
-    app_cache_processor:get_ttl_and_field_index(Table).
 
 -spec update_table_time_to_live(table(), time_to_live()) -> {timestamp(), table_key_position()}.
 update_table_time_to_live(Table, TTL) ->
@@ -347,6 +359,14 @@ remove_data(Table, Key) ->
 remove_data(TransactionType, Table, Key) ->
     app_cache_processor:delete_data(TransactionType, Table, Key).
 
+-spec remove_all_data(Table::table()) -> ok | error().
+remove_all_data(Table) ->
+    remove_all_data(?TRANSACTION_TYPE_SAFE, Table).
+
+-spec remove_all_data(transaction_type(), Table::table()) -> ok | error().
+remove_all_data(TransactionType, Table) ->
+    app_cache_processor:delete_all_data(TransactionType, Table).
+
 -spec remove_record(tuple()) -> ok | error().
 remove_record(Record) ->
     remove_record(?TRANSACTION_TYPE_SAFE, Record).
@@ -433,21 +453,25 @@ cached_sequence_all_sequences() ->
     gen_server:call(?SEQUENCE_CACHE, {all_sequences}).
 
 %% Secondary functions
--spec set_read_transform_function(table(), function()) -> ok | error().
-set_read_transform_function(Table, Function) ->
-    gen_server:call(?PROCESSOR, {set_read_transform_function, Table, Function}).
+-spec set_read_transform_function(table(), function_identifier()) -> ok | error().
+set_read_transform_function(Table, FunctionIdentifier) ->
+    gen_server:call(?PROCESSOR, {set_read_transform_function, Table, FunctionIdentifier}).
 
--spec set_write_transform_function(table(), function()) -> ok | error().
-set_write_transform_function(Table, Function) ->
-    gen_server:call(?PROCESSOR, {set_write_transform_function, Table, Function}).
+-spec set_write_transform_function(table(), function_identifier()) -> ok | error().
+set_write_transform_function(Table, FunctionIdentifier) ->
+    gen_server:call(?PROCESSOR, {set_write_transform_function, Table, FunctionIdentifier}).
 
--spec set_refresh_function(table(), function()) -> ok | error().
-set_refresh_function(Table, Function) ->
-    gen_server:call(?PROCESSOR, {set_refresh_function, Table, Function}).
+-spec set_refresh_function(table(), #refresh_data{}) -> ok | error().
+set_refresh_function(Table, RefreshData) when is_record(RefreshData, refresh_data)->
+    gen_server:call(?PROCESSOR, {set_refresh_function, Table, RefreshData});
+set_refresh_function(Table, RefreshData) ->
+    {error, {?INVALID_REFRESH_FUNCTION, {Table, RefreshData}}}.
 
--spec set_persist_function(table(), function()) -> ok | error().
-set_persist_function(Table, Function) ->
-    gen_server:call(?PROCESSOR, {set_persist_function, Table, Function}).
+-spec set_persist_function(table(), #persist_data{}) -> ok | error().
+set_persist_function(Table, PersistData) when is_record(PersistData, persist_data) ->
+    gen_server:call(?PROCESSOR, {set_persist_function, Table, PersistData});
+set_persist_function(Table, PersistData) ->
+    {error, {?INVALID_PERSIST_FUNCTION, {Table, PersistData}}}.
 
 -spec get_record_fields(table_key()) -> list().
 get_record_fields(RecordName) ->

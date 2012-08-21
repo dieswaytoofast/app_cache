@@ -16,6 +16,8 @@
 -define(NO_SUCH_SEQUENCE, no_such_sequence).
 -define(INVALID_TABLE, invalid_table).
 -define(INVALID_PERSIST_FUNCTION, invalid_persist_function).
+-define(INVALID_REFRESH_FUNCTION, invalid_refresh_function).
+-define(INVALID_FUNCTION_IDENTIFIER, invalid_function_identifier).
 -define(PERSIST_FAILURE, persist_failure).
 
 -define(PROCESSOR,     app_cache_processor).
@@ -41,6 +43,17 @@
 -define(TRANSACTION_TYPE_SAFE, safe).
 -define(TRANSACTION_TYPE_DIRTY, dirty).
 
+-record(refresh_data, {
+          before_each_read = false                          :: boolean(),
+          after_each_read = false                           :: boolean(),
+          refresh_interval = ?INFINITY                      :: non_neg_integer(),   % Seconds
+          function_identifier                               :: function_identifier()
+         }).
+
+-record(persist_data, {
+          synchronous = false                               :: boolean(),
+          function_identifier                               :: function_identifier()
+         }).
 
 -record(app_metatable, {
           table                                             :: table(),
@@ -49,14 +62,39 @@
           type = ?DEFAULT_TYPE                              :: table_type(),
           fields = []                                       :: [table_key()],
           secondary_index_fields = []                       :: [table_key()],
-          read_transform_function                           :: function(),
-          write_transform_function                          :: function(),
-          refresh_function                                  :: table_helper(),
-          persist_function                                  :: table_helper(),
-          last_update                                       :: non_neg_integer(),
+          read_transform_function                           :: function_identifier(),
+          write_transform_function                          :: function_identifier(),
+          refresh_function = #refresh_data{}                :: #refresh_data{},
+          persist_function = #persist_data{}                :: #persist_data{},
+          last_update = 0                                   :: non_neg_integer(),
           reason                                            :: any(),
           extras                                            :: any()
          }).
+
+%% Helper record to keep track of the functions that we use
+-record(data_functions, {
+          read_transform_function                           :: function() | undefined,
+          write_transform_function                          :: function() | undefined,
+          refresh_function = #refresh_data{}                :: #refresh_data{},
+          persist_function = #persist_data{}                :: #persist_data{}
+          }).
+
+-define(REFRESH_TABLE, refresh_table).
+-record(?REFRESH_TABLE, {
+            key                                             :: refresh_key(),
+            value                                           :: table_key(),
+            time_to_live                                    :: time_to_live(),
+            last_update                                     :: non_neg_integer(),
+            timer                                           :: timer2:tref()
+            }).
+
+-define(REFRESH_TABLE_DEF, #app_metatable{
+                            table = ?REFRESH_TABLE,
+                            time_to_live = ?INFINITY,
+                            type = ordered_set,
+                            fields = [key, value, time_to_live, last_update, timer]
+                          }).
+
 
 -define(SEQUENCE_TABLE, sequence_table).
 -record(?SEQUENCE_TABLE, {
@@ -86,10 +124,24 @@
             timestamp,
             value,
             name}).
+-define(TEST_METATABLE1, #app_metatable{
+                table = test_table_1,
+                version = 1, 
+                time_to_live = 600,
+                type = ordered_set,
+                fields = [key, timestamp, value, name],
+                secondary_index_fields = [name]
+            }).
 -record(test_table_2, {
             key,
             timestamp,
             value,
-            foo,
-            bar,
             name}).
+-define(TEST_METATABLE2, #app_metatable{
+                table = test_table_2,
+                version = 1, 
+                time_to_live = 60,
+                type = bag,
+                fields = [key, timestamp, value, name],
+                secondary_index_fields = [name]
+            }).
