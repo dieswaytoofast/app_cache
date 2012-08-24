@@ -45,15 +45,19 @@
 -export([key_exists/2, 
          get_data_from_index/3, get_data/2, get_all_data/1, get_data_by_last_key/1, 
          get_last_n_entries/2, get_first_n_entries/2, 
+         get_records/1,
          get_after/2, 
-         set_data/1, 
-         remove_data/2, remove_all_data/1, remove_record/1]).
+         set_data/1, set_data_overwriting_timestamp/1,
+         remove_data/2, remove_all_data/1, 
+         remove_record/1, remove_record_ignoring_timestamp/1]).
 -export([key_exists/3, 
          get_data_from_index/4, get_data/3, get_all_data/2, get_data_by_last_key/2, 
+         get_records/2,
          get_after/3,
-         set_data/2,
+         set_data/2,set_data_overwriting_timestamp/2,
          get_last_n_entries/3, get_first_n_entries/3, 
-         remove_data/3, remove_all_data/2, remove_record/2]).
+         remove_data/3, remove_all_data/2, 
+         remove_record/2, remove_record_ignoring_timestamp/2]).
 
 -export([sequence_create/1, sequence_create/2, 
          sequence_set_value/2, 
@@ -333,6 +337,16 @@ get_after(Table, After) ->
 get_after(TransactionType, Table, After) ->
     app_cache_processor:read_after(TransactionType, Table, After).
 
+%% Get data matching a given record
+-spec get_records(tuple()) -> any().
+get_records(Record) ->
+    get_records(?TRANSACTION_TYPE_SAFE, Record).
+
+%% Get data after (in erlang term order) a value
+-spec get_records(transaction_type(), tuple()) -> any().
+get_records(TransactionType, Record) ->
+    app_cache_processor:read_records(TransactionType, Record).
+
 %% Get all data in table
 -spec get_all_data(table()) -> any().
 get_all_data(Table) ->
@@ -343,6 +357,7 @@ get_all_data(Table) ->
 get_all_data(TransactionType, Table) ->
     app_cache_processor:read_all_data(TransactionType, Table).
 
+%% Write the record
 -spec set_data(Value::any()) -> ok | error().
 set_data(Value) ->
     set_data(?TRANSACTION_TYPE_SAFE, Value).
@@ -350,6 +365,20 @@ set_data(Value) ->
 -spec set_data(transaction_type(), Value::any()) -> ok | error().
 set_data(TransactionType, Value) ->
     app_cache_processor:write_data(TransactionType, Value).
+
+%% @doc This is mainly for bags. If you don't care about the timestamp in your
+%%      records, then "set_data" will create new records each time you write,
+%%      soemthing you probably won't like
+%%      "set_data_overwriting_timestamp" will delete any existing record w/ the
+%%      same fields (excluding timestamp), thus ensuring that the timestamp
+%%      field doesn't cause spurious writes
+-spec set_data_overwriting_timestamp(Value::any()) -> ok | error().
+set_data_overwriting_timestamp(Value) ->
+    set_data_overwriting_timestamp(?TRANSACTION_TYPE_SAFE, Value).
+
+-spec set_data_overwriting_timestamp(transaction_type(), Value::any()) -> ok | error().
+set_data_overwriting_timestamp(TransactionType, Value) ->
+    app_cache_processor:write_data_overwriting_timestamp(TransactionType, Value).
 
 -spec remove_data(Table::table(), Key::table_key()) -> ok | error().
 remove_data(Table, Key) ->
@@ -373,7 +402,15 @@ remove_record(Record) ->
 
 -spec remove_record(transaction_type(), tuple()) -> ok | error().
 remove_record(TransactionType, Record) ->
-    app_cache_processor:delete_record(TransactionType, Record).
+    app_cache_processor:delete_record(TransactionType, _IgnoreTimestamp = false, Record).
+
+-spec remove_record_ignoring_timestamp(tuple()) -> ok | error().
+remove_record_ignoring_timestamp(Record) ->
+    remove_record_ignoring_timestamp(?TRANSACTION_TYPE_SAFE, Record).
+
+-spec remove_record_ignoring_timestamp(transaction_type(), tuple()) -> ok | error().
+remove_record_ignoring_timestamp(TransactionType, Record) ->
+    app_cache_processor:delete_record(TransactionType, _IgnoreTimestamp = true, Record).
 
 -spec sequence_create(sequence_key()) -> ok.
 sequence_create(Key) ->

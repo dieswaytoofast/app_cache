@@ -35,13 +35,15 @@
 -export([read_data_from_index/4]).
 -export([read_data_by_last_key/2]).
 -export([read_after/3]).
+-export([read_records/2]).
 -export([read_all_data/2]).
 -export([read_last_n_entries/3]).
 -export([read_first_n_entries/3]).
 -export([write_data/2]).
+-export([write_data_overwriting_timestamp/2]).
 -export([delete_data/3]).
 -export([delete_all_data/2]).
--export([delete_record/2]).
+-export([delete_record/3]).
 -export([increment_data/3, increment_data/4]).
 
 -export([table_fields/1]).
@@ -557,7 +559,7 @@ table_fields(Table, Tables) ->
 check_key_exists(TransactionType, Table, Key) ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -575,7 +577,7 @@ check_key_exists(TransactionType, Table, Key) ->
 read_data(TransactionType, Table, Key) ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -588,7 +590,7 @@ read_data(TransactionType, Table, Key) ->
 read_data_from_index(TransactionType, Table, Key, IndexField) ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -610,7 +612,7 @@ read_data_from_index(TransactionType, Table, Key, IndexField) ->
 read_data_by_last_key(TransactionType, Table) ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -628,7 +630,7 @@ read_data_by_last_key(TransactionType, Table) ->
 read_after(TransactionType, Table, After) ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -642,11 +644,31 @@ read_after(TransactionType, Table, After) ->
             filter_and_update_data(get_functions_internal(TableInfo), TableTTL, TTLFieldIndex, CachedData)
     end.
 
+-spec read_records(transaction_type(), tuple()) -> list().
+read_records(TransactionType, Record) ->
+    Table = element(1, Record),
+    TableInfo = table_info(Table),
+    % return only the valid values
+    case get_ttl_and_field_index_internal(TableInfo) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            Record1 = clear_timestamp_if_unset(TTLFieldIndex, Record),
+            Data1 = cache_select_records(TransactionType, Record1),
+            CachedData = case refresh_if_necessary(TableInfo, get_data_keys(Data1)) of
+                true ->
+                    cache_select_records(TransactionType, Record1);
+                false ->
+                    Data1
+            end,
+            filter_and_update_data(get_functions_internal(TableInfo), TableTTL, TTLFieldIndex, CachedData)
+    end.
+
 -spec read_all_data(transaction_type(), table()) -> list().
 read_all_data(TransactionType, Table) ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -664,7 +686,7 @@ read_all_data(TransactionType, Table) ->
 read_last_n_entries(TransactionType, Table, N) when N > 0 ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -676,7 +698,7 @@ read_last_n_entries(TransactionType, Table, N) when N > 0 ->
 read_first_n_entries(TransactionType, Table, N) when N > 0 ->
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {TableTTL, TTLFieldIndex} -> 
@@ -736,43 +758,78 @@ write_data(TransactionType, Data) ->
     Table = element(1, Data),
     TableInfo = table_info(Table),
     % return only the valid values
-    case get_ttl_and_field_index(TableInfo) of
+    case get_ttl_and_field_index_internal(TableInfo) of
         {error, _} = Error ->
             Error;
         {_, TTLFieldIndex} -> 
-            % '+ 1' because we're looking at the tuple, not the record
             TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
             TransformedData = write_transform_data(get_functions_internal(TableInfo), TimestampedData),
-            persist_data(get_functions_internal(TableInfo), TransactionType, TransformedData)
+            persist_data(get_functions_internal(TableInfo), 
+                         TransactionType, _OverwriteTimestamp = false, 
+                         TransformedData, _ClearedTimestampData = undefined)
     end.
 
-%% persist the data to mnesia (and maybe somewhere else?)
--spec persist_data(#data_functions{}, transaction_type(), any()) -> ok | error().
-persist_data(#data_functions{persist_function = undefined}, TransactionType, Data) ->
-    write_data_to_cache(TransactionType, Data);
-persist_data(#data_functions{persist_function = #persist_data{function_identifier
-                                                              = undefined}}, TransactionType, Data) ->
-    write_data_to_cache(TransactionType, Data);
-persist_data(#data_functions{persist_function = #persist_data{synchronous = true, 
-                                                              function_identifier = FunctionIdentifier}}, TransactionType, Data) ->
+-spec write_data_overwriting_timestamp(transaction_type(), any()) -> ok | error().
+write_data_overwriting_timestamp(TransactionType, Data) ->
+    Table = element(1, Data),
+    TableInfo = table_info(Table),
+    % return only the valid values
+    case get_ttl_and_field_index_internal(TableInfo) of
+        {error, _} = Error ->
+            Error;
+        {_, TTLFieldIndex} -> 
+            TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
+            TransformedData = write_transform_data(get_functions_internal(TableInfo), TimestampedData),
+            ClearedTimestampData = clear_timestamp_if_exists(TTLFieldIndex, TransformedData),
+            persist_data(get_functions_internal(TableInfo), 
+                         TransactionType, _OverwriteTimestamp = true, 
+                         TransformedData, ClearedTimestampData)
+    end.
+
+%% @doc persist the data to mnesia (and maybe somewhere else?)
+%%      with OverwriteTimestamp =:= true, this will delete any existing records w/ the same
+%%      key
+-spec persist_data(#data_functions{}, transaction_type(), boolean(), any(), any()) -> ok | error().
+persist_data(#data_functions{persist_function = undefined}, 
+             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
+    write_data_to_cache(TransactionType, OverwriteTimestamp, Data,
+                        ClearedTimestampData);
+persist_data(#data_functions{persist_function = 
+                             #persist_data{function_identifier = undefined}}, 
+             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
+    write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData);
+persist_data(#data_functions{persist_function = 
+                             #persist_data{synchronous = true, 
+                                           function_identifier = FunctionIdentifier}}, 
+             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
     try
-        ok = write_data_to_cache(TransactionType, Data),
+        ok = write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
         transform_data(FunctionIdentifier, Data)
     catch
         _:_ ->
-            Table = element(1, Data),
-            Key = element(2, Data),
-            delete_data(TransactionType, Table, Key),
+            roll_back_write(TransactionType, OverwriteTimestamp, Data),
             {error, {?PERSIST_FAILURE, Data}}
     end;
 persist_data(#data_functions{persist_function = #persist_data{synchronous = false, 
                                                               function_identifier
-                                                              = FunctionIdentifier}}, TransactionType, Data) ->
-    write_data_to_cache(TransactionType, Data),
+                                                              = FunctionIdentifier}}, TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
+    write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
     proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end);
-persist_data(_, _TransactionType, _Data) ->
+persist_data(_, _TransactionType, _OverwriteTimestamp, _Data, _ClearedTimestampData) ->
     {error, ?INVALID_PERSIST_FUNCTION}.
 
+% This one presumes that there is only one record w/ the given key (i.e., not a
+% bag)
+-spec roll_back_write(transaction_type(), boolean(), any()) -> ok.
+roll_back_write(TransactionType, _OverwriteTimestamp = false, Record) ->
+    Table = element(1, Record),
+    Key = element(2, Record),
+    delete_data(TransactionType, Table, Key);
+% This one presumes that there are many records with the given key, i.e., a
+% bag)
+roll_back_write(TransactionType, _OverwriteTimestamp = true, Record) ->
+    delete_record(TransactionType, _IgnoreTimestamp = true, Record).
+    
 
 %%%
 %%% Actual Mnesia functions for CRUD activities
@@ -789,8 +846,8 @@ increment_data(Table, Key, Value) ->
 
 
 %% Writes
--spec write_data_to_cache(transaction_type(), any()) -> ok | error().
-write_data_to_cache(?TRANSACTION_TYPE_SAFE, Data) -> 
+-spec write_data_to_cache(transaction_type(), boolean(), any(), any()) -> ok | error().
+write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = false, Data, _ClearedTimestampData) -> 
     WriteFun = fun () -> mnesia:write(Data) end,
     case mnesia:transaction(WriteFun) of
         {atomic, ok} ->
@@ -798,7 +855,39 @@ write_data_to_cache(?TRANSACTION_TYPE_SAFE, Data) ->
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-write_data_to_cache(?TRANSACTION_TYPE_DIRTY, Data) -> 
+write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = true, Data, ClearedTimestampData) -> 
+    DataFun = fun () -> 
+            % Get all the records that match when we ignore the timestamp
+            Table = element(1, ClearedTimestampData),
+            Records = case mnesia:select(Table, [{ClearedTimestampData, [], ['$_']}]) of
+                Result when is_list(Result) ->
+                    Result;
+                _ ->
+                    []
+            end,
+            % Delete these records
+            [mnesia:delete_object(Record) || Record <- Records],
+            % And write the new data
+            mnesia:write(Data) end,
+    case mnesia:transaction(DataFun) of
+        {atomic, ok} ->
+            ok;
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end;
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = true, Data, ClearedTimestampData) -> 
+    Table = element(1, ClearedTimestampData),
+    Records = case mnesia:dirty_select(Table, [{ClearedTimestampData, [], ['$_']}]) of
+        Result when is_list(Result) ->
+            Result;
+        _ ->
+            []
+    end,
+    % Delete these records
+    [mnesia:dirty_delete_object(Record) || Record <- Records],
+    % And write the new data
+    mnesia:dirty_write(Data);
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = false, Data, _ClearedTimestampData) -> 
     mnesia:dirty_write(Data).
 
 
@@ -828,24 +917,57 @@ delete_all_data(_, Table) ->
             {error, {Reason, MData}}
     end.
 
--spec delete_record(transaction_type(), tuple()) -> ok | error().
-delete_record(?TRANSACTION_TYPE_SAFE, Record) ->
+-spec delete_record(transaction_type(), boolean(), any()) -> ok | error().
+delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = false, Record) ->
     DeleteFun = fun () -> mnesia:delete_object(Record) end,
     case mnesia:transaction(DeleteFun) of
         {atomic, ok} ->
             Table = element(1, Record),
             Key = element(2, Record),
-            app_cache_refresher:remove_key(Table, Key),
-            ok;
+            delete_refresher_if_necessary(TransactionType, Table, Key);
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-delete_record(?TRANSACTION_TYPE_DIRTY, Record) ->
+delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = true, Record) ->
+    ClearedRecord = clear_timestamp_if_exists(Record),
+    Table = element(1, ClearedRecord),
+    DeleteFun = fun() ->
+            Records = case mnesia:select(Table, [{ClearedRecord, [], ['$_']}]) of
+                Result when is_list(Result) ->
+                    Result;
+                _ ->
+                    []
+            end,
+            % Delete these records
+            [mnesia:delete_object(InRecord) || InRecord <- Records]
+    end,
+    case mnesia:transaction(DeleteFun) of
+        {atomic, _} ->
+            Table = element(1, Record),
+            Key = element(2, Record),
+            delete_refresher_if_necessary(TransactionType, Table, Key);
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end;
+delete_record(?TRANSACTION_TYPE_DIRTY = TransactionType, _IgnoreTimestamp = false, Record) ->
     Table = element(1, Record),
     Key = element(2, Record),
     mnesia:dirty_delete_object(Record),
-    app_cache_refresher:remove_key(Table, Key).
-
+    delete_refresher_if_necessary(TransactionType, Table, Key);
+delete_record(?TRANSACTION_TYPE_DIRTY = TransactionType, _IgnoreTimestamp = true, Record) ->
+    ClearedRecord = clear_timestamp_if_exists(Record),
+    Table = element(1, ClearedRecord),
+    Records = case mnesia:dirty_select(Table, [{ClearedRecord, [], ['$_']}]) of
+        Result when is_list(Result) ->
+            Result;
+        _ ->
+            []
+    end,
+    % Delete these records
+   [mnesia:dirty_delete_object(InRecord) || InRecord <- Records],
+    Table = element(1, Record),
+    Key = element(2, Record),
+    delete_refresher_if_necessary(TransactionType, Table, Key).
 
 %% Reads
 -spec cache_entry(transaction_type(), table(), table_key()) -> [any()].
@@ -932,6 +1054,14 @@ cache_select_first_n_entries(TransactionType, Table, N) ->
 -spec cache_select_all(transaction_type(), table()) -> [any()].
 cache_select_all(TransactionType, Table) ->
     MatchHead = '$1',
+    Guard =  [],
+    Result = ['$_'],
+    cache_select(TransactionType, Table, undefined, [{MatchHead, Guard, Result}]).
+
+-spec cache_select_records(transaction_type(), tuple()) -> [any()].
+cache_select_records(TransactionType, Record) ->
+    Table = element(1, Record),
+    MatchHead = Record,
     Guard =  [],
     Result = ['$_'],
     cache_select(TransactionType, Table, undefined, [{MatchHead, Guard, Result}]).
@@ -1046,12 +1176,45 @@ update_tables_with_table_info(TableInfo, Tables) ->
             [TableInfo | Tables]
     end.
 
+%% @doc If there is a timestamp field in this record, set it to the current time
 -spec get_timestamped_data(undefined | table_key_position(), any()) -> any().
 get_timestamped_data(undefined, Data) ->
     Data;
 get_timestamped_data(TTLFieldIndex, Data) ->
     CurrentTime = current_time_in_gregorian_seconds(),
+    % '+ 1' because we're looking at the tuple, not the record
     setelement(TTLFieldIndex + 1, Data, CurrentTime).
+
+%% @doc If there is a timestamp field in this record, and it is 'undefined', set
+%%      '_' (for use in a matchspec)
+-spec clear_timestamp_if_unset(undefined | table_key_position(), any()) -> any().
+clear_timestamp_if_unset(undefined, Data) ->
+    Data;
+clear_timestamp_if_unset(TTLFieldIndex, Data) ->
+    case element(TTLFieldIndex+1, Data) of
+        undefined ->
+            setelement(TTLFieldIndex + 1, Data, '_');
+        _ ->
+            Data
+    end.
+
+%% @doc If there is a timestamp field in this record,set it to '_' (for use in a matchspec)
+-spec clear_timestamp_if_exists(any()) -> any().
+clear_timestamp_if_exists(Record) ->
+    Table = element(1, Record),
+    TableInfo = table_info(Table),
+    case get_ttl_and_field_index_internal(TableInfo) of
+        {error, _} ->
+            Record;
+        {_TableTTL, TTLFieldIndex} -> 
+            clear_timestamp_if_exists(TTLFieldIndex, Record)
+    end.
+
+-spec clear_timestamp_if_exists(undefined | table_key_position(), any()) -> any().
+clear_timestamp_if_exists(undefined, Data) ->
+    Data;
+clear_timestamp_if_exists(TTLFieldIndex, Data) ->
+    setelement(TTLFieldIndex + 1, Data, '_').
 
 %% @doc Get the last N entries from the ordered set
 -spec get_lifo_data(transaction_type(), table(), table_key(), list(), integer()) -> list().
@@ -1093,11 +1256,12 @@ transform_data(_Other, Data) -> Data.
 
 
 %% @doc Get the keys (first item in the tuple)
+%%      Note: duplicates are eliminated
 -spec get_data_keys([tuple()] | undefined) -> [table_key()].
 get_data_keys(undefined) ->
     [];
 get_data_keys(Data) ->
-    [element(1, Item) || Item <- Data].
+    lists:usort([element(1, Item) || Item <- Data]).
 
 %% @doc Make sure that the Function is sent in in the correct format
 -spec validate_function_identifier(function_identifier()) -> boolean().
@@ -1110,6 +1274,16 @@ validate_function_identifier(undefined) ->
     true;
 validate_function_identifier(_) ->
     false.
+
+%% @doc Remove the refresher entry if there are no more keys
+-spec delete_refresher_if_necessary(transaction_type(), table(), table_key()) -> ok.
+delete_refresher_if_necessary(TransactionType, Table, Key) ->
+    case check_key_exists(TransactionType, Table, Key) of
+        false ->
+            app_cache_refresher:remove_key(Table, Key);
+        _ ->
+            void
+    end.
 
 %%%
 %%%  For Tests
