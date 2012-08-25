@@ -87,7 +87,7 @@ reset_function(Table) ->
 %% @doc remove the entry for this key
 -spec remove_key(table(), table_key()) -> ok | error().
 remove_key(Table, Key) ->
-    gen_server:cast(?SERVER, {remove_key, Table, Key}).
+    gen_server:call(?SERVER, {remove_key, Table, Key}).
 
 %% @doc remove all the entries for this table
 -spec clear_table(table()) -> ok | error().
@@ -132,18 +132,19 @@ handle_call({refresh_data, Table, KeyList}, _From, State) ->
     end,
     {reply, ok, State};
 
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
-
-handle_cast({remove_key, Table, Key}, #state{functions = Functions} = State) ->
+handle_call({remove_key, Table, Key}, _From, #state{functions = Functions} = State) ->
+    Response = 
     case dict:is_key(Table, Functions) of
         true ->
             remove_entry_from_table(Table, Key);
         false ->
             ok
     end,
-    {noreply, State};
+    {reply, Response, State};
+
+handle_call(_Request, _From, State) ->
+    Reply = ok,
+    {reply, Reply, State}.
 
 handle_cast({clear_table, Table}, #state{functions = Functions} = State) ->
     case dict:is_key(Table, Functions) of
@@ -398,12 +399,13 @@ remove_entry_from_table(Table, Key) ->
                     %       because a timer fired
                     mnesia:delete({Table, Key});
                 _ ->
-                    void
+                    ok
             end
     end,
     case mnesia:transaction(DeleteFun) of
         {atomic, _} ->
             ok;
         {aborted, _} = Error ->
-            lager:debug("error:~p~n", [Error])
+            lager:debug("error:~p~n", [Error]),
+            {error, Error}
     end.

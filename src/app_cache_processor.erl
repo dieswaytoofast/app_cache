@@ -894,17 +894,28 @@ write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = false, Data, 
 %% Deletes
 -spec delete_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
 delete_data(?TRANSACTION_TYPE_SAFE, Table, Key) ->
-    DeleteFun = fun () -> mnesia:delete({Table, Key}) end,
+    DeleteFun = fun () -> 
+            mnesia:delete({Table, Key}),
+            case app_cache_refresher:remove_key(Table, Key) of
+                ok ->
+                    ok;
+                Error ->
+                    throw(Error)
+            end
+    end,
     case mnesia:transaction(DeleteFun) of
         {atomic, ok} ->
-            app_cache_refresher:remove_key(Table, Key),
             ok;
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
 delete_data(?TRANSACTION_TYPE_DIRTY, Table, Key) ->
-    mnesia:dirty_delete({Table, Key}),
-    app_cache_refresher:remove_key(Table, Key).
+    case app_cache_refresher:remove_key(Table, Key) of
+        ok ->
+            mnesia:dirty_delete({Table, Key});
+        Error ->
+            Error
+    end.
 
 %% Deletes
 -spec delete_all_data(transaction_type(), Table::table()) -> ok | error().
@@ -919,12 +930,20 @@ delete_all_data(_, Table) ->
 
 -spec delete_record(transaction_type(), boolean(), any()) -> ok | error().
 delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = false, Record) ->
-    DeleteFun = fun () -> mnesia:delete_object(Record) end,
-    case mnesia:transaction(DeleteFun) of
-        {atomic, ok} ->
+    DeleteFun = fun () -> 
+            mnesia:delete_object(Record) ,
             Table = element(1, Record),
             Key = element(2, Record),
-            delete_refresher_if_necessary(TransactionType, Table, Key);
+            case delete_refresher_if_necessary(TransactionType, Table, Key) of
+                ok ->
+                    ok;
+                Error ->
+                    throw(Error)
+            end
+    end,
+    case mnesia:transaction(DeleteFun) of
+        {atomic, ok} ->
+            ok;
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
@@ -939,13 +958,19 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = true,
                     []
             end,
             % Delete these records
-            [mnesia:delete_object(InRecord) || InRecord <- Records]
+            [mnesia:delete_object(InRecord) || InRecord <- Records],
+            Table = element(1, Record),
+            Key = element(2, Record),
+            case delete_refresher_if_necessary(TransactionType, Table, Key) of
+                ok ->
+                    ok;
+                Error ->
+                    throw(Error)
+            end
     end,
     case mnesia:transaction(DeleteFun) of
         {atomic, _} ->
-            Table = element(1, Record),
-            Key = element(2, Record),
-            delete_refresher_if_necessary(TransactionType, Table, Key);
+            ok;
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
@@ -953,7 +978,13 @@ delete_record(?TRANSACTION_TYPE_DIRTY = TransactionType, _IgnoreTimestamp = fals
     Table = element(1, Record),
     Key = element(2, Record),
     mnesia:dirty_delete_object(Record),
-    delete_refresher_if_necessary(TransactionType, Table, Key);
+    case delete_refresher_if_necessary(TransactionType, Table, Key) of
+        ok ->
+            ok;
+        Error ->
+            mnesia:write(Record),
+            Error
+    end;
 delete_record(?TRANSACTION_TYPE_DIRTY = TransactionType, _IgnoreTimestamp = true, Record) ->
     ClearedRecord = clear_timestamp_if_exists(Record),
     Table = element(1, ClearedRecord),
@@ -967,7 +998,14 @@ delete_record(?TRANSACTION_TYPE_DIRTY = TransactionType, _IgnoreTimestamp = true
    [mnesia:dirty_delete_object(InRecord) || InRecord <- Records],
     Table = element(1, Record),
     Key = element(2, Record),
-    delete_refresher_if_necessary(TransactionType, Table, Key).
+    case delete_refresher_if_necessary(TransactionType, Table, Key) of
+        ok ->
+            ok;
+        Error ->
+            [mnesia:dirty_write(InRecord) || InRecord <- Records],
+            Error
+    end.
+
 
 %% Reads
 -spec cache_entry(transaction_type(), table(), table_key()) -> [any()].
@@ -1282,7 +1320,7 @@ delete_refresher_if_necessary(TransactionType, Table, Key) ->
         false ->
             app_cache_refresher:remove_key(Table, Key);
         _ ->
-            void
+            ok
     end.
 
 %%%

@@ -2,9 +2,13 @@
 %%% @author Juan Jose Comellas <juanjo@comellas.org>
 %%% @author Mahesh Paolini-Subramanya <mahesh@dieswaytoofast.com>
 %%% @author Tom Heinan <me@tomheinan.com>
-%%% @copyright (C) 2012 Juan Jose Comellas, Mahesh Paolini-Subramanya, Tom Heinan
+%%% @copyright (C) 2011-2012 Juan Jose Comellas, Mahesh Paolini-Subramanya
 %%% @doc helper module to build #app_metatable{} for use with app_cache
 %%% @end
+%%%
+%%% This source file is subject to the New BSD License. You should have received
+%%% a copy of the New BSD license with this software. If not, it can be
+%%% retrieved from: http://www.opensource.org/licenses/bsd-license.php
 %%%-------------------------------------------------------------------
 -module(app_cache_table_info).
 -author('Juan Jose Comellas <juanjo@comellas.org>').
@@ -48,23 +52,34 @@
 %% Application callbacks
 %% ===================================================================
 
+%% @doc Create the default meta_information for a table
 -spec table_info(mt_table()) -> [#app_metatable{}].
 table_info(RecordName) ->
     table_info(RecordName, ?DEFAULT_TYPE, ?DEFAULT_TTL, ?DEFAULT_SECONDARY_INDEX_FIELDS, ?DEFAULT_VERSION).
 
+%% @doc Create the default meta_information for a table 
+%%      of a given type
 -spec table_info(mt_table(), mt_table_type()) -> [#app_metatable{}].
 table_info(RecordName, Type) ->
     table_info(RecordName, Type, ?DEFAULT_TTL, ?DEFAULT_SECONDARY_INDEX_FIELDS, ?DEFAULT_VERSION).
 
+%% @doc Create the default meta_information for a table 
+%%      with a given type and cache TTL
 -spec table_info(mt_table(), mt_table_type(), mt_time_to_live()) -> [#app_metatable{}].
 table_info(RecordName, Type, TTL) ->
     table_info(RecordName, Type, TTL, ?DEFAULT_SECONDARY_INDEX_FIELDS, ?DEFAULT_VERSION).
 
+%% @doc Create the default meta_information for a table 
+%%      with a given type, cache TTL, and secondary indexes
+%%      on some fields
 -spec table_info(mt_table(), mt_table_type(), mt_time_to_live(), 
                  mt_secondary_index_fields()) -> [#app_metatable{}].
 table_info(RecordName, Type, TTL, SecondaryIndexFields) ->
     table_info(RecordName, Type, TTL, SecondaryIndexFields, ?DEFAULT_VERSION).
 
+%% @doc Create the default meta_information for a table 
+%%      with a given type, cache TTL, secondary indexes
+%%      on some fields, and a table version
 -spec table_info(mt_table(), mt_table_type(), mt_time_to_live(), 
                  mt_secondary_index_fields(), mt_table_version()) -> [#app_metatable{}].
 table_info(RecordName, Type, TTL, SecondaryIndexFields, Version) ->

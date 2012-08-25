@@ -46,7 +46,7 @@
 -record(refresh_data, {
           before_each_read = false                          :: boolean(),
           after_each_read = false                           :: boolean(),
-          refresh_interval = ?INFINITY                      :: non_neg_integer(),   % Seconds
+            refresh_interval = ?INFINITY                      :: time_to_live(),   % Seconds
           function_identifier                               :: function_identifier()
          }).
 
