@@ -80,7 +80,7 @@ It defines the rules behind the automatic persisting of data from the cache to s
 
 **RECORDS**
 
- ```#refresh_data{}```
+. ```#refresh_data{}```
 
 Field | Description | Default
 ----- | ----------- | --------
@@ -89,7 +89,7 @@ refresh_interval | how frequently the function gets called | infinity (i.e., nev
 before_each_read | _true_: The function gets synchronously called before each read, ensuring that the data in the cache is current. _false_: no function call per read | false
 after_each_read | _true_: The function gets called asynchronously after each read. _false_: no function call per read | false
 
- ```#persist_data{}```
+. ```#persist_data{}```
 
 Field | Description | Default
 ----- | ----------- | --------
