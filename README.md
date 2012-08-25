@@ -68,7 +68,7 @@ Note that if you use an anonymous function, _it will *not* work across nodes!!!_
           function_identifier                               :: function_identifier()
          }).
 ```
-It defines the rules behind the automatic refreshing of the data in the cache from external sources, and is defined below
+It defines the rules behind the automatic refreshing of the data in the cache from external sources, and is defined further below
 5. ```persist_data{}``` is a record of the form
 ```erlang
 -record(persist_data, {
@@ -76,9 +76,11 @@ It defines the rules behind the automatic refreshing of the data in the cache fr
           function_identifier                               :: function_identifier()
          }).
 ```
-It defines the rules behind the automatic persisting of data from the cache to secondary storage, and is defined below
+It defines the rules behind the automatic persisting of data from the cache to secondary storage, and is defined further below
 
-```#refresh_data{}```
+**RECORDS**
+
+ ```#refresh_data{}```
 
 Field | Description | Default
 ----- | ----------- | --------
@@ -87,7 +89,7 @@ refresh_interval | how frequently the function gets called | infinity (i.e., nev
 before_each_read | _true_: The function gets synchronously called before each read, ensuring that the data in the cache is current. _false_: no function call per read | false
 after_each_read | _true_: The function gets called asynchronously after each read. _false_: no function call per read | false
 
-```#persist_data{}```
+ ```#persist_data{}```
 
 Field | Description | Default
 ----- | ----------- | --------
@@ -145,6 +147,6 @@ get_table_info(foo_table_2) ->
 ```
 Credits
 =======
-This started as a variant of the mnesia accessors at [mlapi](https://github.com/jcomellas/mlapi)
+This started as a variant of the mnesia accessors at [mlapi](https://github.com/jcomellas/mlapi) by [jcomellas](https://github.com/jcomellas/)
 
 Much additional munging performed as part of [Spawnfest 2012](http://spawnfest.com/)
