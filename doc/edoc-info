@@ -1,6 +1,0 @@
-{application,app_cache}.
-{packages,[]}.
-{modules,[app_cache,app_cache_app,app_cache_processor,app_cache_processor_sup,
-          app_cache_refresher,app_cache_refresher_sup,app_cache_scavenger,
-          app_cache_scavenger_sup,app_cache_sequence_cache,
-          app_cache_sequence_cache_sup,dynarec]}.
