@@ -388,7 +388,7 @@ get_records(Record) ->
 %% @doc Get any items in the table that (exactly) match Record
 %%      <p>This is of particular use for bags with <i>timestamp</i> fields. If
 %%      you pass in a record with <i>timestamp =:= undefined</i>, you will get
-%%      back all the records that match regardless of the timestamp
+%%      back all the records that match regardless of the timestamp</p>
 %% @end
 get_records(TransactionType, Record) ->
     app_cache_processor:read_records(TransactionType, Record).
@@ -406,56 +406,76 @@ get_all_data(TransactionType, Table) ->
 
 %% Write the record
 -spec set_data(Value::any()) -> ok | error().
+%% @equiv set_data(safe, Value)
 set_data(Value) ->
     set_data(?TRANSACTION_TYPE_SAFE, Value).
 
 -spec set_data(transaction_type(), Value::any()) -> ok | error().
+%% @doc Write the record "Value" to the table 
+%%      <p>The table name is element(1, Value)</p>
+%% @end
 set_data(TransactionType, Value) ->
     app_cache_processor:write_data(TransactionType, Value).
 
-%% @doc This is mainly for bags. If you don't care about the timestamp in your
-%%      records, then "set_data" will create new records each time you write,
-%%      soemthing you probably won't like
-%%      "set_data_overwriting_timestamp" will delete any existing record w/ the
-%%      same fields (excluding timestamp), thus ensuring that the timestamp
-%%      field doesn't cause spurious writes
 -spec set_data_overwriting_timestamp(Value::any()) -> ok | error().
+%% @equiv set_data_overwriting_timestamp(safe, Value)
 set_data_overwriting_timestamp(Value) ->
     set_data_overwriting_timestamp(?TRANSACTION_TYPE_SAFE, Value).
 
 -spec set_data_overwriting_timestamp(transaction_type(), Value::any()) -> ok | error().
+%% @doc If your table is a <i>bag</i> and contains a <i>timestamp</i> field, 
+%%      but you actually don't care about the timestamp in your
+%%      records, then <i>set_data</i> will create new records each time you write.
+%%      <p> This is something you probably won't appreciate</p>
+%%      <p><i>set_data_overwriting_timestamp</i> will delete any existing record w/ the
+%%      same fields (ignoring timestamp, of course), thus ensuring that the timestamp
+%%      field doesn't cause spurious writes</p>
+%% @end
 set_data_overwriting_timestamp(TransactionType, Value) ->
     app_cache_processor:write_data_overwriting_timestamp(TransactionType, Value).
 
 -spec remove_data(Table::table(), Key::table_key()) -> ok | error().
+%% @equiv remove_data(safe, Table, Key)
 remove_data(Table, Key) ->
     remove_data(?TRANSACTION_TYPE_SAFE, Table, Key).
 
 -spec remove_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
+%% @doc Remove (all) the record(s) with key Key in Table
 remove_data(TransactionType, Table, Key) ->
     app_cache_processor:delete_data(TransactionType, Table, Key).
 
 -spec remove_all_data(Table::table()) -> ok | error().
+%% @equiv remove_all_data(safe, Table)
 remove_all_data(Table) ->
     remove_all_data(?TRANSACTION_TYPE_SAFE, Table).
 
 -spec remove_all_data(transaction_type(), Table::table()) -> ok | error().
+%% @doc Remove <i>all</i> the data in Table
 remove_all_data(TransactionType, Table) ->
     app_cache_processor:delete_all_data(TransactionType, Table).
 
 -spec remove_record(tuple()) -> ok | error().
+%% @equiv remove_record(safe, Record)
 remove_record(Record) ->
     remove_record(?TRANSACTION_TYPE_SAFE, Record).
 
 -spec remove_record(transaction_type(), tuple()) -> ok | error().
+%% @doc Remove the record Record. 
+%%      <p>Note that <i>all</i> fields need to match, including <i>timestamp</i></p>
 remove_record(TransactionType, Record) ->
     app_cache_processor:delete_record(TransactionType, _IgnoreTimestamp = false, Record).
 
 -spec remove_record_ignoring_timestamp(tuple()) -> ok | error().
+%% @equiv remove_record_ignoring_timestamp(safe, Record)
 remove_record_ignoring_timestamp(Record) ->
     remove_record_ignoring_timestamp(?TRANSACTION_TYPE_SAFE, Record).
 
 -spec remove_record_ignoring_timestamp(transaction_type(), tuple()) -> ok | error().
+%% @doc Remove the record Record ignoring any existing timestamp field.
+%%      <p>The difference between this and <i>remove_record</i> is that if the
+%%      record contains a <i>timestamp</i> field, it is ignored.</p>
+%%      <p>This is of use w/ bags where you might have the same record w/
+%%      multiple timestamps, and you want them all gone</p>
 remove_record_ignoring_timestamp(TransactionType, Record) ->
     app_cache_processor:delete_record(TransactionType, _IgnoreTimestamp = true, Record).
 

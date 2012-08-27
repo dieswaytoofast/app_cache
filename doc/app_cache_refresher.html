@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module app_cache_refresher</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module app_cache_refresher</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Refreshes individual entries in tables.
+<p>Copyright © (C) 2011-2012 Juan Jose Comellas, Mahesh Paolini-Subramanya</p>
+
+<p><b>Behaviours:</b> <a href="gen_server.html"><tt>gen_server</tt></a>.</p>
+<p><b>Authors:</b> Juan Jose Comellas (<a href="mailto:juanjo@comellas.org"><tt>juanjo@comellas.org</tt></a>), Mahesh Paolini-Subramanya (<a href="mailto:mahesh@dieswaytoofast.com"><tt>mahesh@dieswaytoofast.com</tt></a>), Tom Heinan (<a href="mailto:me@tomheinan.com"><tt>me@tomheinan.com</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2>Refreshes individual entries in tables
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#apply_refresh_function-3">apply_refresh_function/3</a></td><td>Run the refresh function on the key in the table.</td></tr>
+<tr><td valign="top"><a href="#clear_table-1">clear_table/1</a></td><td>remove all the entries for this table.</td></tr>
+<tr><td valign="top"><a href="#code_change-3">code_change/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#double_value-1">double_value/1</a></td><td>Testing.</td></tr>
+<tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_info-2">handle_info/2</a></td><td>We use this to capture refresh_functon requests when the parameter is an
+       anonymous fun.</td></tr>
+<tr><td valign="top"><a href="#refresh_data-3">refresh_data/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#remove_function-1">remove_function/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#remove_key-2">remove_key/2</a></td><td>remove the entry for this key.</td></tr>
+<tr><td valign="top"><a href="#reset_cache-0">reset_cache/0</a></td><td>Reset the cache.</td></tr>
+<tr><td valign="top"><a href="#reset_function-1">reset_function/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td></td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="apply_refresh_function-3">apply_refresh_function/3</a></h3>
+<div class="spec">
+<p><tt>apply_refresh_function(RefreshData::#refresh_data{} | <a href="#type-function_identifier">function_identifier()</a> | undefined, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Run the refresh function on the key in the table</p>
+
+<h3 class="function"><a name="clear_table-1">clear_table/1</a></h3>
+<div class="spec">
+<p><tt>clear_table(Table::<a href="#type-table">table()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>remove all the entries for this table</p>
+
+<h3 class="function"><a name="code_change-3">code_change/3</a></h3>
+<div class="spec">
+<p><tt>code_change(OldVsn, State, Extra) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="double_value-1">double_value/1</a></h3>
+<div class="spec">
+<p><tt>double_value(Key) -&gt; any()</tt></p>
+</div><p>Testing</p>
+
+<h3 class="function"><a name="handle_call-3">handle_call/3</a></h3>
+<div class="spec">
+<p><tt>handle_call(Request, From, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="handle_cast-2">handle_cast/2</a></h3>
+<div class="spec">
+<p><tt>handle_cast(Msg, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="handle_info-2">handle_info/2</a></h3>
+<div class="spec">
+<p><tt>handle_info(Info, State) -&gt; any()</tt></p>
+</div><p>We use this to capture refresh_functon requests when the parameter is an
+       anonymous fun</p>
+
+<h3 class="function"><a name="refresh_data-3">refresh_data/3</a></h3>
+<div class="spec">
+<p><tt>refresh_data(X1::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, KeyList::[<a href="#type-table_key">table_key()</a>]) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="remove_function-1">remove_function/1</a></h3>
+<div class="spec">
+<p><tt>remove_function(Table::<a href="#type-table">table()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="remove_key-2">remove_key/2</a></h3>
+<div class="spec">
+<p><tt>remove_key(Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>remove the entry for this key</p>
+
+<h3 class="function"><a name="reset_cache-0">reset_cache/0</a></h3>
+<div class="spec">
+<p><tt>reset_cache() -&gt; ok</tt><br></p>
+</div><p>Reset the cache</p>
+
+<h3 class="function"><a name="reset_function-1">reset_function/1</a></h3>
+<div class="spec">
+<p><tt>reset_function(Table::<a href="#type-table">table()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="start_link-0">start_link/0</a></h3>
+<div class="spec">
+<p><tt>start_link() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="terminate-2">terminate/2</a></h3>
+<div class="spec">
+<p><tt>terminate(Reason, State) -&gt; any()</tt></p>
+</div>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Aug 27 2012, 17:56:02.</i></p>
+</body>
+</html>

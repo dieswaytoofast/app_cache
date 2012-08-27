@@ -3,9 +3,26 @@ app_cache
 Toolset that can be used to
 
 1. Externalize the CRUD activities associated with mnesia
+2. Provide cached and un-cached sequences
 2. Provide a "write cache"" that will automatically persist data to secondary storage
 3. Provide a "read cache" that will automatically pull data in from external sources
 4. Provide a "transform cache" that will automatically transform data before each read and/or write
+
+**WARNING**
+**The ```timestamp``` field is treated specially. Read on…**
+
+If your record does not contain a field called ```timestamp``` you can happily and safely ignore this paragraph.  If, however, it **does** contain a ```timestamp``` field, then you need to be aware that ```app_cache``` does fun things with this field.  In particular
+
+1. If you write the record, but leave the timestamp as undefined - ```#my_record.timestamp =:= undefined``` - then _app_cache_ will automagically set it to the current time in gregorian seconds, i.e. ```calendar:datetime_to_gregorian_seconds(calendar:universal_time())```
+2. It will automatically add an index to the timestamp field, allowing you to get data based on the index using ```get_data_from_index/3```
+
+The point?
+Primarily for use when you need timestamped data, but don't want to actually have to deal with the management of the timestamp data.  In particular
+
+1. You want to search data by both the primary key (say, _user_id_), and by _timestamp_ (_Give me all of Joe's data_, vs, _Give me all data after this morning_)
+2. You're tracking events with the same data but different timestamps (_Every time the doorbell rings, write an event_ followed up with a _How many times did the doorbell ring today_ query)
+
+
 
 Details
 =======
@@ -149,6 +166,43 @@ get_table_info(foo_table_2) ->
     app_cache_table_info:table_info(foo_table_2, bag).            
 ```
 
+Write
+-----
+Assuming that the table actually exists, you can write to the table w/ the following functions (look at ```app_cache.erl``` for more details)
+Note that ```TransactionType``` is either **safe** or **dirty**.
+
+1. **safe** will run the queries in 'transactional' mode - i.e., it'll either run through to completion, or fail entirely (with the exception of bag deletes documented elsewhere)
+2. **dirty** will use mnesia's _dirty_ functions, which will be much (!) faster, but as you can imagine, can leave things in an inconsistent state on failure
+
+Function | Parameters | Description
+----- | ----------- | --------
+set_data | Record | Write the record _Record_ to the table.<br>Note that the tablename is ```element(1, Record)```
+set_data_overwriting_timestamp | Record | Set data, but ignore the _timestamp_ field, i.e., if there is an existing record which is identical in all parameters except for _timestamp_, then overwrite that record
+
+**EXAMPLES**
+
+```erlang
+(app_cache@pecorino)70> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+ok
+(app_cache@pecorino)71> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+ok
+(app_cache@pecorino)72> app_cache:get_data(test_table_2, foo1).
+[#test_table_2{key = foo1,timestamp = 63513323628,
+               value = bar1,name = undefined},
+ #test_table_2{key = foo1,timestamp = 63513323636,
+               value = bar1,name = undefined}]     
+```
+```erlang
+(app_cache@pecorino)73> app_cache:set_data(#test_table_2{key = foo2, value = bar2}).
+ok
+(app_cache@pecorino)74> app_cache:set_data_overwriting_timestamp(#test_table_2{key = foo2, value = bar2}).
+ok
+(app_cache@pecorino)75> app_cache:get_data(test_table_2, foo2).                                           
+[#test_table_2{key = foo2,timestamp = 63513323683,
+               value = bar2,name = undefined}]
+```
+
+
 Read
 ----
 Assuming that the table actually exists, you can read from the tables w/ the following functions (look at ```app_cache.erl``` for more details)
@@ -228,7 +282,7 @@ ok
            
 **NOTE**
 
-1. In general, any read request above that involves _erlang term order_ will be performant when used on ```ordered_set```s, and probably not when used on ```set```s or ```bag```s
+1. In general, any read request above that involves _erlang term order_ will be performant when used on ```ordered_sets```, and probably not when used on ```sets``` or ```bags```
 
 
 Credits
