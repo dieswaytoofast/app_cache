@@ -34,6 +34,7 @@
 -export([read_data/3]).
 -export([read_data_from_index/4]).
 -export([read_data_by_last_key/2]).
+-export([read_data_by_first_key/2]).
 -export([read_after/3]).
 -export([read_records/2]).
 -export([read_all_data/2]).
@@ -606,9 +607,10 @@ read_data_from_index(TransactionType, Table, Key, IndexField) ->
             filter_and_update_data(get_functions_internal(TableInfo), TableTTL, TTLFieldIndex, CachedData)
     end.
 
+-spec read_data_by_last_key(transaction_type(), table()) -> list().
 %% @doc It returns the largest key in the table
 %%      This assumes that the table is of type ordered_set. 
--spec read_data_by_last_key(transaction_type(), table()) -> list().
+%%      (otherwise it involves table scans)
 read_data_by_last_key(TransactionType, Table) ->
     TableInfo = table_info(Table),
     % return only the valid values
@@ -620,6 +622,27 @@ read_data_by_last_key(TransactionType, Table) ->
             CachedData = case refresh_if_necessary(TableInfo, get_data_keys(Data1)) of
                 true ->
                     cache_last_key_entry(TransactionType, Table);
+                false ->
+                    Data1
+            end,
+            filter_and_update_data(get_functions_internal(TableInfo), TableTTL, TTLFieldIndex, CachedData)
+    end.
+
+-spec read_data_by_first_key(transaction_type(), table()) -> list().
+%% @doc It returns the smallest key in the table
+%%      This assumes that the table is of type ordered_set. 
+%%      (otherwise it involves table scans)
+read_data_by_first_key(TransactionType, Table) ->
+    TableInfo = table_info(Table),
+    % return only the valid values
+    case get_ttl_and_field_index_internal(TableInfo) of
+        {error, _} = Error ->
+            Error;
+        {TableTTL, TTLFieldIndex} -> 
+            Data1 = cache_first_key_entry(TransactionType, Table),
+            CachedData = case refresh_if_necessary(TableInfo, get_data_keys(Data1)) of
+                true ->
+                    cache_first_key_entry(TransactionType, Table);
                 false ->
                     Data1
             end,
@@ -1046,6 +1069,26 @@ cache_last_key_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
     end;
 cache_last_key_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
     case mnesia:dirty_last(Table) of
+        '$end_of_table' ->
+            [];
+        Key ->
+            cache_entry(TransactionType, Table, Key)
+    end.
+
+
+-spec cache_first_key_entry(transaction_type(), table()) -> [any()].
+cache_first_key_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
+    ReadFun = fun () -> mnesia:first(Table) end,
+    case mnesia:transaction(ReadFun) of
+        {atomic,'$end_of_table'} ->
+            [];
+        {atomic, Key} ->
+            cache_entry(TransactionType, Table, Key);
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end;
+cache_first_key_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
+    case mnesia:dirty_first(Table) of
         '$end_of_table' ->
             [];
         Key ->

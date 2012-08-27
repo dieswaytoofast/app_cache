@@ -43,7 +43,8 @@
 
 %% Data accessor APIs
 -export([key_exists/2, 
-         get_data_from_index/3, get_data/2, get_all_data/1, get_data_by_last_key/1, 
+         get_data_from_index/3, get_data/2, get_all_data/1, 
+         get_data_by_last_key/1, get_data_by_first_key/1, 
          get_last_n_entries/2, get_first_n_entries/2, 
          get_records/1,
          get_after/2, 
@@ -51,7 +52,8 @@
          remove_data/2, remove_all_data/1, 
          remove_record/1, remove_record_ignoring_timestamp/1]).
 -export([key_exists/3, 
-         get_data_from_index/4, get_data/3, get_all_data/2, get_data_by_last_key/2, 
+         get_data_from_index/4, get_data/3, get_all_data/2, 
+         get_data_by_last_key/2, get_data_by_first_key/2,
          get_records/2,
          get_after/3,
          set_data/2,set_data_overwriting_timestamp/2,
@@ -279,81 +281,126 @@ update_table_time_to_live(Table, TTL) ->
 %%
 %% Table accessors
 %%
--spec key_exists(Table::table(), Key::table_key()) -> any().
+-spec key_exists(Table::table(), Key::table_key()) -> boolean().
+%% @equiv key_exists(safe, Table, Key)
 key_exists(Table, Key) ->
     key_exists(?TRANSACTION_TYPE_SAFE, Table, Key).
 
--spec key_exists(transaction_type(), Table::table(), Key::table_key()) -> any().
+-spec key_exists(transaction_type(), Table::table(), Key::table_key()) -> boolean().
+%% @doc Check to see if a record w/ key Key exists in Table
 key_exists(TransactionType, Table, Key) ->
     app_cache_processor:check_key_exists(TransactionType, Table, Key).
 
--spec get_data(Table::table(), Key::table_key()) -> any().
+-spec get_data(Table::table(), Key::table_key()) -> [any()].
+%% @equiv get_data(safe, Table, Key)
 get_data(Table, Key) ->
     get_data(?TRANSACTION_TYPE_SAFE, Table, Key).
 
--spec get_data(transaction_type(), Table::table(), Key::table_key()) -> any().
+-spec get_data(transaction_type(), Table::table(), Key::table_key()) -> [any()].
+%% @doc Get all the records from the Table with the key Key 
+%% @end
 get_data(TransactionType, Table, Key) ->
     app_cache_processor:read_data(TransactionType, Table, Key).
 
--spec get_data_from_index(Table::table(), Key::table_key(), IndexField::table_key()) -> any().
-get_data_from_index(Table, Key, IndexField) ->
-    get_data_from_index(?TRANSACTION_TYPE_SAFE, Table, Key, IndexField).
+-spec get_data_from_index(Table::table(), Value::table_key(), IndexField::table_key()) -> [any()].
+%% @equiv get_data_from_index(safe, Table, Value, IndexField)
+get_data_from_index(Table, Value, IndexField) ->
+    get_data_from_index(?TRANSACTION_TYPE_SAFE, Table, Value, IndexField).
 
--spec get_data_from_index(transaction_type(), Table::table(), Key::table_key(), IndexField::table_key()) -> any().
-get_data_from_index(TransactionType, Table, Key, IndexField) ->
-    app_cache_processor:read_data_from_index(TransactionType, Table, Key, IndexField).
+-spec get_data_from_index(transaction_type(), Table::table(), Value::table_key(), IndexField::table_key()) -> [any()].
+%% @doc Get all the records from the Table where the Value matches the value
+%%      in field IndexField 
+%%      <p>e.g. get_data_from_index(test_table_1, "some thing here", value)</p>
+%%      <p>where 'value' is an indexed field in test_table_1</p>
+%% @end
+get_data_from_index(TransactionType, Table, Value, IndexField) ->
+    app_cache_processor:read_data_from_index(TransactionType, Table, Value, IndexField).
 
--spec get_data_by_last_key(Table::table()) -> any().
+-spec get_data_by_last_key(Table::table()) -> [any()].
+%% @equiv get_data_by_last_key(safe, Table)
 get_data_by_last_key(Table) ->
     get_data_by_last_key(?TRANSACTION_TYPE_SAFE, Table).
 
--spec get_data_by_last_key(transaction_type(), Table::table()) -> any().
+-spec get_data_by_last_key(transaction_type(), Table::table()) -> [any()].
+%% @doc Get the last item (in erlang term order) in Table.  
+%%      Performant on <i>ordered_set</i>s
+%% @end
 get_data_by_last_key(TransactionType, Table) ->
     app_cache_processor:read_data_by_last_key(TransactionType, Table).
 
--spec get_last_n_entries(Table::table(), pos_integer()) -> any().
+-spec get_data_by_first_key(Table::table()) -> [any()].
+%% @equiv get_data_by_first_key(safe, Table)
+get_data_by_first_key(Table) ->
+    get_data_by_first_key(?TRANSACTION_TYPE_SAFE, Table).
+
+-spec get_data_by_first_key(transaction_type(), Table::table()) -> [any()].
+%% @doc Get the first item (in erlang term order) in Table.  
+%%      Performant on <i>ordered_set</i>s
+%% @end
+get_data_by_first_key(TransactionType, Table) ->
+    app_cache_processor:read_data_by_first_key(TransactionType, Table).
+
+-spec get_last_n_entries(Table::table(), pos_integer()) -> [any()].
+%% @equiv get_last_n_entries(safe, Table, N)
 get_last_n_entries(Table, N) ->
     get_last_n_entries(?TRANSACTION_TYPE_SAFE, Table, N).
 
--spec get_last_n_entries(transaction_type(), Table::table(), pos_integer()) -> any().
+-spec get_last_n_entries(transaction_type(), Table::table(), pos_integer()) -> [any()].
+%% @doc Get the last N entries (in erlang term order) in Table
+%%      <p>Performant on <i>ordered_set</i>s</p>
+%% @end
 get_last_n_entries(TransactionType, Table, N) ->
     app_cache_processor:read_last_n_entries(TransactionType, Table, N).
 
--spec get_first_n_entries(Table::table(), pos_integer()) -> any().
+-spec get_first_n_entries(Table::table(), pos_integer()) -> [any()].
+%% @equiv get_first_n_entries(safe, Table, N)
 get_first_n_entries(Table, N) ->
     get_first_n_entries(?TRANSACTION_TYPE_SAFE, Table, N).
 
--spec get_first_n_entries(transaction_type(), Table::table(), pos_integer()) -> any().
+-spec get_first_n_entries(transaction_type(), Table::table(), pos_integer()) -> [any()].
+%% @doc Get the first N entries in the table. <i>First</i> is in erlang term
+%%      order. 
+%%      <p>Performant on <i>ordered_set</i>s, requires table scans for all other table types</p>
+%% @end
 get_first_n_entries(TransactionType, Table, N) ->
     app_cache_processor:read_first_n_entries(TransactionType, Table, N).
 
-%% Get data after (in erlang term order) a value
--spec get_after(table(), table_key()) -> any().
+-spec get_after(table(), table_key()) -> [any()].
+%% @equiv get_after(safe, Table, After)
 get_after(Table, After) ->
     get_after(?TRANSACTION_TYPE_SAFE, Table, After).
 
 %% Get data after (in erlang term order) a value
--spec get_after(transaction_type(), table(), table_key()) -> any().
+-spec get_after(transaction_type(), table(), table_key()) -> [any()].
+%% @doc Get all the entries in a table greater than or equal to the Key "After". Keys are sorted in
+%%      erlang term order.  
+%%      <p>Performant on <i>ordered_set</i>s, requires table scans for all other table types</p>
+%% @end
 get_after(TransactionType, Table, After) ->
     app_cache_processor:read_after(TransactionType, Table, After).
 
-%% Get data matching a given record
--spec get_records(tuple()) -> any().
+-spec get_records(tuple()) -> [any()].
+%% @equiv get_records(safe, Record)
 get_records(Record) ->
     get_records(?TRANSACTION_TYPE_SAFE, Record).
 
-%% Get data after (in erlang term order) a value
--spec get_records(transaction_type(), tuple()) -> any().
+-spec get_records(transaction_type(), tuple()) -> [any()].
+%% @doc Get any items in the table that (exactly) match Record
+%%      <p>This is of particular use for bags with <i>timestamp</i> fields. If
+%%      you pass in a record with <i>timestamp =:= undefined</i>, you will get
+%%      back all the records that match regardless of the timestamp
+%% @end
 get_records(TransactionType, Record) ->
     app_cache_processor:read_records(TransactionType, Record).
 
 %% Get all data in table
--spec get_all_data(table()) -> any().
+-spec get_all_data(table()) -> [any()].
+%% @equiv get_all_data(safe, Table)
 get_all_data(Table) ->
     get_all_data(?TRANSACTION_TYPE_SAFE, Table).
 
-%% Get all data in table
--spec get_all_data(transaction_type(), table()) -> any().
+-spec get_all_data(transaction_type(), table()) -> [any()].
+%% @doc Get all the data in the table
 get_all_data(TransactionType, Table) ->
     app_cache_processor:read_all_data(TransactionType, Table).
 

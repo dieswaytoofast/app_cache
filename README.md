@@ -114,23 +114,26 @@ Add this as a rebar dependency to your project.
 	a. **Nodes** is a list of all the nodes that you will be running mnesia on.  
 	b. If you are running only one node, you can call  **app_cache:setup()** or **app_cache:setup([node()])**
 
-Setup
+Mnesia Usage
 =====
-Set up a record of the form described in **DETAILS** above and call **app_cache:cache_init/1** with it as an argument. e.g
+Create
+------
+
+Creating tables consists of calling ```app_cache:cache_init/1``` with a list of ```#app_metatable{}``` records as the argument up a record of the form described in **DETAILS** above and call **app_cache:cache_init/1** with it as an argument. e.g
 
 ```erlang
-app_cache:cache_init(#app_metatable{
+app_cache:cache_init([]#app_metatable{
                 			table = foo_table_1,
                 				version = 1, 
                 				time_to_live = 60,
                 				type = ordered_set,
                 				fields = [key, timestamp, value, name],
-                				secondary_index_fields = [name]}).
+                				secondary_index_fields = [name]}]).
 ```
 
-This will set up a table **foo_table_1**, with a time_to_live of **60**, of the type **ordered_set**, with the fields **[key, timestamp, value, name]**, and an additional index on the field **name**.
+This will set up a table ```foo_table_1```, with a time_to_live of ```60```, of the type ```ordered_set```, with the fields ```[key, timestamp, value, name]```, and an additional index on the field ```name```.
 
-As an alternate, you can use the **helper* file **priv/app_cache_table_info.erl**.  Include it in your source, and use it as so:
+As an alternate, you can use the **helper** file ```priv/app_cache_table_info.erl```.  Include it in your source, and use it as so:
 
 ```erlang
 my_setup() ->
@@ -143,8 +146,91 @@ get_metadata() ->
 get_table_info(foo_table_1) ->
     app_cache_table_info:table_info(foo_table_1, ordered_set, 60);
 get_table_info(foo_table_2) ->
-    app_cache_table_info:table_info(foo_table_2, bag).
+    app_cache_table_info:table_info(foo_table_2, bag).            
 ```
+
+Read
+----
+Assuming that the table actually exists, you can read from the tables w/ the following functions (look at ```app_cache.erl``` for more details)
+Note that ```TransactionType``` is either **safe** or **dirty**.
+
+1. **safe** will run the queries in 'transactional' mode - i.e., it'll either run through to completion, or fail entirely (with the exception of bag deletes documented elsewhere)
+2. **dirty** will use mnesia's _dirty_ functions, which will be much (!) faster, but as you can imagine, can leave things in an inconsistent state on failure
+
+Function | Parameters | Description
+----- | ----------- | --------
+get_data | Table, Key | Get all the records from the Table with the key Key
+get_data_from_index | Table, Value, IndexField | Get all the records from the Table where  Value matches the value in field IndexField <p>e.g. get_data_from_index(test_table_1, "some thing here", value) where 'value' is an indexed field in test_table_1</p>
+get_data_by_last_key | Table | Get the last Record (in erlang term order) in Table
+get_data_by_first_key | Table | Get the first Record (in erlang term order) in Table
+get_last_n_entries | Table, N | Get the last N entries (in erlang term order) in Table
+get_first_n_entries | Table, N | Get the first N entries (in erlang term order) in Table
+get_after | Table, After | Get all records in table with keys greater than or equal to After
+get_records | Table, RecordN | Get any items in the table that (exactly) match Record.  <p>This is of particular use for ```bag```s with <i>timestamp</i> fields. If you pass in a record with ```timestamp =:= undefined```, you will get back all the records that match regardless of the timestamp
+get_all_data | Table |Get all the data in Table
+
+**EXAMPLES**
+
+```erlang
+(app_cache@pecorino)25> app_cache:set_data(#test_table_1{key = foo1, value = bar1}).
+ok      
+(app_cache@pecorino)26> app_cache:set_data(#test_table_1{key = foo2, value = bar2}).
+ok
+(app_cache@pecorino)27> app_cache:set_data(#test_table_1{key = foo3, value = bar3}).
+ok
+```
+```erlang
+(app_cache@pecorino)30>app_cache:get_data(test_table_1, foo1).
+[#test_table_1{key = foo1,timestamp = 63513306669,
+               value = bar1,name = undefined}]
+```
+```erlang
+(app_cache@pecorino)31> app_cache:get_data_by_last_key(test_table_1).
+[#test_table_1{key = foo3,timestamp = 63513310206,
+               value = bar3,name = undefined}]
+```
+```erlang
+(app_cache@pecorino)55> app_cache:get_last_n_entries(test_table_1, 2).
+[#test_table_1{key = foo3,timestamp = 63513310206,
+               value = bar3,name = undefined},
+ #test_table_1{key = foo2,timestamp = 63513310202,
+               value = bar2,name = undefined}]
+```
+```erlang
+(app_cache@pecorino)56> app_cache:get_first_n_entries(test_table_1, 2).
+[#test_table_1{key = foo1,timestamp = 63513306669,
+               value = bar1,name = undefined},
+ #test_table_1{key = foo2,timestamp = 63513310202,
+               value = bar2,name = undefined}]               
+```
+```erlang
+(app_cache@pecorino)58> app_cache:get_after(test_table_1, foo2).       
+[#test_table_1{key = foo2,timestamp = 63513310202,
+               value = bar2,name = undefined},
+ #test_table_1{key = foo3,timestamp = 63513310206,
+               value = bar3,name = undefined}]
+```
+```erlang
+(app_cache@pecorino)65> app_cache:get_records( #test_table_1{key = foo2, value = bar2}).             
+[#test_table_1{key = foo2,timestamp = 63513310202,
+               value = bar2,name = undefined}]
+```
+```erlang
+(app_cache@pecorino)62> app_cache:get_all_data(test_table_1).                       
+[#test_table_1{key = foo1,timestamp = 63513306669,
+               value = bar1,name = undefined},
+ #test_table_1{key = foo2,timestamp = 63513310202,
+               value = bar2,name = undefined},
+ #test_table_1{key = foo3,timestamp = 63513310206,
+               value = bar3,name = undefined}]
+  
+```
+           
+**NOTE**
+
+1. In general, any read request above that involves _erlang term order_ will be performant when used on ```ordered_set```s, and probably not when used on ```set```s or ```bag```s
+
+
 Credits
 =======
 This started as a variant of the mnesia accessors at [mlapi](https://github.com/jcomellas/mlapi) by [jcomellas](https://github.com/jcomellas/)

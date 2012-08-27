@@ -153,6 +153,10 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_get_last_entered_data_dirty()),
                  empty_all_tables(),
+                 ?debugVal(t_get_first_entered_data()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_first_entered_data_dirty()),
+                 empty_all_tables(),
                 ?debugVal(t_get_first_n_entries()),
                  empty_all_tables(),
                  ?debugVal(t_get_first_n_entries_dirty()),
@@ -527,6 +531,18 @@ t_get_last_entered_data_dirty() ->
     ok = app_cache:set_data(?RECORD2),
     [Data] = app_cache:get_data_by_last_key(dirty, ?TEST_TABLE_1),
     ?_assertEqual(?VALUE2, Data#test_table_1.value).
+
+t_get_first_entered_data() ->
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    [Data] = app_cache:get_data_by_first_key(?TEST_TABLE_1),
+    ?_assertEqual(?VALUE, Data#test_table_1.value).
+
+t_get_first_entered_data_dirty() ->
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    [Data] = app_cache:get_data_by_first_key(dirty, ?TEST_TABLE_1),
+    ?_assertEqual(?VALUE, Data#test_table_1.value).
 
 t_get_last_n_entries() ->
     ok = app_cache:set_data(?RECORD),
