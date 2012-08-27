@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module app_cache_processor</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module app_cache_processor</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>The cache processor.
+<p>Copyright © (C) 2011-2012 Juan Jose Comellas, Mahesh Paolini-Subramanya</p>
+
+<p><b>Behaviours:</b> <a href="gen_server.html"><tt>gen_server</tt></a>.</p>
+<p><b>Authors:</b> Juan Jose Comellas (<a href="mailto:juanjo@comellas.org"><tt>juanjo@comellas.org</tt></a>), Mahesh Paolini-Subramanya (<a href="mailto:mahesh@dieswaytoofast.com"><tt>mahesh@dieswaytoofast.com</tt></a>), Tom Heinan (<a href="mailto:me@tomheinan.com"><tt>me@tomheinan.com</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2>The cache processor
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#check_key_exists-3">check_key_exists/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#code_change-3">code_change/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_metatable-1">create_metatable/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#delete_all_data-2">delete_all_data/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#delete_data-3">delete_data/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#delete_record-3">delete_record/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#double_test_table_1_value-1">double_test_table_1_value/1</a></td><td>Double whatever is in the 'value' field of the inut.</td></tr>
+<tr><td valign="top"><a href="#get_functions-1">get_functions/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_ttl_and_field_index-1">get_ttl_and_field_index/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_info-2">handle_info/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#increment_data-3">increment_data/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#increment_data-4">increment_data/4</a></td><td></td></tr>
+<tr><td valign="top"><a href="#init-1">init/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_after-3">read_after/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_all_data-2">read_all_data/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_data-3">read_data/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_data_by_first_key-2">read_data_by_first_key/2</a></td><td>It returns the smallest key in the table
+       This assumes that the table is of type ordered_set.</td></tr>
+<tr><td valign="top"><a href="#read_data_by_last_key-2">read_data_by_last_key/2</a></td><td>It returns the largest key in the table
+       This assumes that the table is of type ordered_set.</td></tr>
+<tr><td valign="top"><a href="#read_data_from_index-4">read_data_from_index/4</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_first_n_entries-3">read_first_n_entries/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_last_n_entries-3">read_last_n_entries/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#read_records-2">read_records/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#start_link-1">start_link/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#table_fields-1">table_fields/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#table_info-1">table_info/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_metatable-0">upgrade_metatable/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_table-1">upgrade_table/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_table-2">upgrade_table/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_table-4">upgrade_table/4</a></td><td></td></tr>
+<tr><td valign="top"><a href="#write_data-2">write_data/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#write_data_overwriting_timestamp-2">write_data_overwriting_timestamp/2</a></td><td></td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="check_key_exists-3">check_key_exists/3</a></h3>
+<div class="spec">
+<p><tt>check_key_exists(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; boolean()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="code_change-3">code_change/3</a></h3>
+<div class="spec">
+<p><tt>code_change(OldVsn, State, Extra) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="create_metatable-1">create_metatable/1</a></h3>
+<div class="spec">
+<p><tt>create_metatable(Nodes::[node()]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="delete_all_data-2">delete_all_data/2</a></h3>
+<div class="spec">
+<p><tt>delete_all_data(X1::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="delete_data-3">delete_data/3</a></h3>
+<div class="spec">
+<p><tt>delete_data(X1::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="delete_record-3">delete_record/3</a></h3>
+<div class="spec">
+<p><tt>delete_record(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, IgnoreTimestamp::boolean(), Record::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="double_test_table_1_value-1">double_test_table_1_value/1</a></h3>
+<div class="spec">
+<p><tt>double_test_table_1_value(Test_table_1::#test_table_1{}) -&gt; #test_table_1{}</tt><br></p>
+</div><p>Double whatever is in the 'value' field of the inut</p>
+
+<h3 class="function"><a name="get_functions-1">get_functions/1</a></h3>
+<div class="spec">
+<p><tt>get_functions(Table::<a href="#type-table">table()</a>) -&gt; #data_functions{} | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_ttl_and_field_index-1">get_ttl_and_field_index/1</a></h3>
+<div class="spec">
+<p><tt>get_ttl_and_field_index(App_metatable::#app_metatable{}) -&gt; {<a href="#type-timestamp">timestamp()</a>, <a href="#type-table_key_position">table_key_position()</a>}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="handle_call-3">handle_call/3</a></h3>
+<div class="spec">
+<p><tt>handle_call(Request, From, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="handle_cast-2">handle_cast/2</a></h3>
+<div class="spec">
+<p><tt>handle_cast(Msg, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="handle_info-2">handle_info/2</a></h3>
+<div class="spec">
+<p><tt>handle_info(Info, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="increment_data-3">increment_data/3</a></h3>
+<div class="spec">
+<p><tt>increment_data(Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>, Value::sequence_value) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="increment_data-4">increment_data/4</a></h3>
+<div class="spec">
+<p><tt>increment_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>, Value::sequence_value) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="init-1">init/1</a></h3>
+<div class="spec">
+<p><tt>init(X1) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="read_after-3">read_after/3</a></h3>
+<div class="spec">
+<p><tt>read_after(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, After::<a href="#type-table_key">table_key()</a>) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="read_all_data-2">read_all_data/2</a></h3>
+<div class="spec">
+<p><tt>read_all_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="read_data-3">read_data/3</a></h3>
+<div class="spec">
+<p><tt>read_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="read_data_by_first_key-2">read_data_by_first_key/2</a></h3>
+<div class="spec">
+<p><tt>read_data_by_first_key(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; list()</tt><br></p>
+</div><p>It returns the smallest key in the table
+       This assumes that the table is of type ordered_set.
+       (otherwise it involves table scans)</p>
+
+<h3 class="function"><a name="read_data_by_last_key-2">read_data_by_last_key/2</a></h3>
+<div class="spec">
+<p><tt>read_data_by_last_key(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; list()</tt><br></p>
+</div><p>It returns the largest key in the table
+       This assumes that the table is of type ordered_set.
+       (otherwise it involves table scans)</p>
+
+<h3 class="function"><a name="read_data_from_index-4">read_data_from_index/4</a></h3>
+<div class="spec">
+<p><tt>read_data_from_index(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>, IndexField::<a href="#type-table_key">table_key()</a>) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="read_first_n_entries-3">read_first_n_entries/3</a></h3>
+<div class="spec">
+<p><tt>read_first_n_entries(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, N::pos_integer()) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="read_last_n_entries-3">read_last_n_entries/3</a></h3>
+<div class="spec">
+<p><tt>read_last_n_entries(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, N::pos_integer()) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="read_records-2">read_records/2</a></h3>
+<div class="spec">
+<p><tt>read_records(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Record::tuple()) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="start_link-0">start_link/0</a></h3>
+<div class="spec">
+<p><tt>start_link() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="start_link-1">start_link/1</a></h3>
+<div class="spec">
+<p><tt>start_link(Nodes) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="table_fields-1">table_fields/1</a></h3>
+<div class="spec">
+<p><tt>table_fields(Table::<a href="#type-table">table()</a>) -&gt; <a href="#type-table_fields">table_fields()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="table_info-1">table_info/1</a></h3>
+<div class="spec">
+<p><tt>table_info(Table::<a href="#type-table">table()</a>) -&gt; #app_metatable{} | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="terminate-2">terminate/2</a></h3>
+<div class="spec">
+<p><tt>terminate(Reason, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="upgrade_metatable-0">upgrade_metatable/0</a></h3>
+<div class="spec">
+<p><tt>upgrade_metatable() -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_table-1">upgrade_table/1</a></h3>
+<div class="spec">
+<p><tt>upgrade_table(Table::<a href="#type-table">table()</a>) -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_table-2">upgrade_table/2</a></h3>
+<div class="spec">
+<p><tt>upgrade_table(Table::<a href="#type-table">table()</a>, Fields::[<a href="#type-app_field">app_field()</a>]) -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_table-4">upgrade_table/4</a></h3>
+<div class="spec">
+<p><tt>upgrade_table(Table::<a href="#type-table">table()</a>, OldVersion::non_neg_integer(), NewVersion::non_neg_integer(), Fields::[<a href="#type-app_field">app_field()</a>]) -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="write_data-2">write_data/2</a></h3>
+<div class="spec">
+<p><tt>write_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Data::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="write_data_overwriting_timestamp-2">write_data_overwriting_timestamp/2</a></h3>
+<div class="spec">
+<p><tt>write_data_overwriting_timestamp(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Data::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Aug 27 2012, 18:47:50.</i></p>
+</body>
+</html>

@@ -1,0 +1,594 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module app_cache</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module app_cache</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Generic app to provide caching.
+<p>Copyright © (C) 2011-2012 Juan Jose Comellas, Mahesh Paolini-Subramanya</p>
+
+<p><b>Authors:</b> Juan Jose Comellas (<a href="mailto:juanjo@comellas.org"><tt>juanjo@comellas.org</tt></a>), Mahesh Paolini-Subramanya (<a href="mailto:mahesh@dieswaytoofast.com"><tt>mahesh@dieswaytoofast.com</tt></a>), Tom Heinan (<a href="mailto:me@tomheinan.com"><tt>me@tomheinan.com</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2>Generic app to provide caching
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cache_init-1">cache_init/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cache_init-2">cache_init/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cache_time_to_live-1">cache_time_to_live/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_all_sequences-0">cached_sequence_all_sequences/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_create-1">cached_sequence_create/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_create-2">cached_sequence_create/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_create-3">cached_sequence_create/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_current_value-1">cached_sequence_current_value/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_delete-1">cached_sequence_delete/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_next_value-1">cached_sequence_next_value/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_next_value-2">cached_sequence_next_value/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_set_value-2">cached_sequence_set_value/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_metatable-0">create_metatable/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_metatable-1">create_metatable/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_table-1">create_table/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_table-2">create_table/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_tables-0">create_tables/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_tables-1">create_tables/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#current_time_in_gregorian_seconds-0">current_time_in_gregorian_seconds/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_after-2">get_after/2</a></td><td>Equivalent to <a href="#get_after-3"><tt>get_after(safe, Table, After)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_after-3">get_after/3</a></td><td>Get all the entries in a table greater than or equal to the Key "After".</td></tr>
+<tr><td valign="top"><a href="#get_all_data-1">get_all_data/1</a></td><td>Equivalent to <a href="#get_all_data-2"><tt>get_all_data(safe, Table)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_all_data-2">get_all_data/2</a></td><td>Get all the data in the table.</td></tr>
+<tr><td valign="top"><a href="#get_data-2">get_data/2</a></td><td>Equivalent to <a href="#get_data-3"><tt>get_data(safe, Table, Key)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_data-3">get_data/3</a></td><td>Get all the records from the Table with the key Key.</td></tr>
+<tr><td valign="top"><a href="#get_data_by_first_key-1">get_data_by_first_key/1</a></td><td>Equivalent to <a href="#get_data_by_first_key-2"><tt>get_data_by_first_key(safe, Table)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_data_by_first_key-2">get_data_by_first_key/2</a></td><td>Get the first item (in erlang term order) in Table.</td></tr>
+<tr><td valign="top"><a href="#get_data_by_last_key-1">get_data_by_last_key/1</a></td><td>Equivalent to <a href="#get_data_by_last_key-2"><tt>get_data_by_last_key(safe, Table)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_data_by_last_key-2">get_data_by_last_key/2</a></td><td>Get the last item (in erlang term order) in Table.</td></tr>
+<tr><td valign="top"><a href="#get_data_from_index-3">get_data_from_index/3</a></td><td>Equivalent to <a href="#get_data_from_index-4"><tt>get_data_from_index(safe, Table, Value, IndexField)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_data_from_index-4">get_data_from_index/4</a></td><td>Get all the records from the Table where the Value matches the value
+       in field IndexField.</td></tr>
+<tr><td valign="top"><a href="#get_env-0">get_env/0</a></td><td>Retrieve all key/value pairs in the env for the specified app.</td></tr>
+<tr><td valign="top"><a href="#get_env-1">get_env/1</a></td><td>The official way to get a value from the app's env.</td></tr>
+<tr><td valign="top"><a href="#get_env-2">get_env/2</a></td><td>The official way to get a value from this application's env.</td></tr>
+<tr><td valign="top"><a href="#get_first_n_entries-2">get_first_n_entries/2</a></td><td>Equivalent to <a href="#get_first_n_entries-3"><tt>get_first_n_entries(safe, Table, N)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_first_n_entries-3">get_first_n_entries/3</a></td><td>Get the first N entries in the table.</td></tr>
+<tr><td valign="top"><a href="#get_last_n_entries-2">get_last_n_entries/2</a></td><td>Equivalent to <a href="#get_last_n_entries-3"><tt>get_last_n_entries(safe, Table, N)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_last_n_entries-3">get_last_n_entries/3</a></td><td>Get the last N entries (in erlang term order) in Table.</td></tr>
+<tr><td valign="top"><a href="#get_metatable-0">get_metatable/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_record_fields-1">get_record_fields/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_records-1">get_records/1</a></td><td>Equivalent to <a href="#get_records-2"><tt>get_records(safe, Record)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get_records-2">get_records/2</a></td><td>Get any items in the table that (exactly) match Record.</td></tr>
+<tr><td valign="top"><a href="#init_metatable-0">init_metatable/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#init_metatable-1">init_metatable/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#init_table-1">init_table/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#init_table-2">init_table/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#key_exists-2">key_exists/2</a></td><td>Equivalent to <a href="#key_exists-3"><tt>key_exists(safe, Table, Key)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#key_exists-3">key_exists/3</a></td><td>Check to see if a record w/ key Key exists in Table.</td></tr>
+<tr><td valign="top"><a href="#last_update_to_datetime-1">last_update_to_datetime/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#remove_all_data-1">remove_all_data/1</a></td><td>Equivalent to <a href="#remove_all_data-2"><tt>remove_all_data(safe, Table)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#remove_all_data-2">remove_all_data/2</a></td><td>Remove <i>all</i> the data in Table.</td></tr>
+<tr><td valign="top"><a href="#remove_data-2">remove_data/2</a></td><td>Equivalent to <a href="#remove_data-3"><tt>remove_data(safe, Table, Key)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#remove_data-3">remove_data/3</a></td><td>Remove (all) the record(s) with key Key in Table.</td></tr>
+<tr><td valign="top"><a href="#remove_record-1">remove_record/1</a></td><td>Equivalent to <a href="#remove_record-2"><tt>remove_record(safe, Record)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#remove_record-2">remove_record/2</a></td><td>Remove the record Record.</td></tr>
+<tr><td valign="top"><a href="#remove_record_ignoring_timestamp-1">remove_record_ignoring_timestamp/1</a></td><td>Equivalent to <a href="#remove_record_ignoring_timestamp-2"><tt>remove_record_ignoring_timestamp(safe, Record)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#remove_record_ignoring_timestamp-2">remove_record_ignoring_timestamp/2</a></td><td>Remove the record Record ignoring any existing timestamp field.</td></tr>
+<tr><td valign="top"><a href="#sequence_create-1">sequence_create/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_create-2">sequence_create/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_current_value-1">sequence_current_value/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_delete-1">sequence_delete/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_next_value-1">sequence_next_value/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_next_value-2">sequence_next_value/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_set_value-2">sequence_set_value/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#set_data-1">set_data/1</a></td><td>Equivalent to <a href="#set_data-2"><tt>set_data(safe, Value)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#set_data-2">set_data/2</a></td><td>Write the record "Value" to the table.</td></tr>
+<tr><td valign="top"><a href="#set_data_overwriting_timestamp-1">set_data_overwriting_timestamp/1</a></td><td>Equivalent to <a href="#set_data_overwriting_timestamp-2"><tt>set_data_overwriting_timestamp(safe, Value)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#set_data_overwriting_timestamp-2">set_data_overwriting_timestamp/2</a></td><td>If your table is a <i>bag</i> and contains a <i>timestamp</i> field,
+       but you actually don't care about the timestamp in your
+       records, then <i>set_data</i> will create new records each time you write.</td></tr>
+<tr><td valign="top"><a href="#set_persist_function-2">set_persist_function/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#set_read_transform_function-2">set_read_transform_function/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#set_refresh_function-2">set_refresh_function/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#set_write_transform_function-2">set_write_transform_function/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#setup-0">setup/0</a></td><td>setup mnesia on this node for disc copies.</td></tr>
+<tr><td valign="top"><a href="#start-0">start/0</a></td><td>Start the application and all its dependencies.</td></tr>
+<tr><td valign="top"><a href="#stop-0">stop/0</a></td><td>Stop the application and all its dependencies.</td></tr>
+<tr><td valign="top"><a href="#table_fields-1">table_fields/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#table_info-1">table_info/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#table_time_to_live-1">table_time_to_live/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#table_version-1">table_version/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#update_table_time_to_live-2">update_table_time_to_live/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_metatable-0">upgrade_metatable/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_table-1">upgrade_table/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_table-2">upgrade_table/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#upgrade_table-4">upgrade_table/4</a></td><td></td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="cache_init-1">cache_init/1</a></h3>
+<div class="spec">
+<p><tt>cache_init(App_metatable::[#app_metatable{}]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cache_init-2">cache_init/2</a></h3>
+<div class="spec">
+<p><tt>cache_init(Nodes::[node()], App_metatable::[#app_metatable{}]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cache_time_to_live-1">cache_time_to_live/1</a></h3>
+<div class="spec">
+<p><tt>cache_time_to_live(Table::<a href="#type-table">table()</a>) -&gt; <a href="#type-time_to_live">time_to_live()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_all_sequences-0">cached_sequence_all_sequences/0</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_all_sequences() -&gt; [#sequence_cache{}]</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_create-1">cached_sequence_create/1</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_create-2">cached_sequence_create/2</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_create-3">cached_sequence_create/3</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>, UpperBoundIncrement::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_current_value-1">cached_sequence_current_value/1</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_current_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_delete-1">cached_sequence_delete/1</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_delete(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_next_value-1">cached_sequence_next_value/1</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_next_value-2">cached_sequence_next_value/2</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Increment::<a href="#type-sequence_value">sequence_value()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="cached_sequence_set_value-2">cached_sequence_set_value/2</a></h3>
+<div class="spec">
+<p><tt>cached_sequence_set_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Value::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="create_metatable-0">create_metatable/0</a></h3>
+<div class="spec">
+<p><tt>create_metatable() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="create_metatable-1">create_metatable/1</a></h3>
+<div class="spec">
+<p><tt>create_metatable(Nodes::[node()]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="create_table-1">create_table/1</a></h3>
+<div class="spec">
+<p><tt>create_table(App_metatable::#app_metatable{}) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="create_table-2">create_table/2</a></h3>
+<div class="spec">
+<p><tt>create_table(App_metatable::#app_metatable{}, Nodes::[node()]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="create_tables-0">create_tables/0</a></h3>
+<div class="spec">
+<p><tt>create_tables() -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="create_tables-1">create_tables/1</a></h3>
+<div class="spec">
+<p><tt>create_tables(Nodes::[node()]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="current_time_in_gregorian_seconds-0">current_time_in_gregorian_seconds/0</a></h3>
+<div class="spec">
+<p><tt>current_time_in_gregorian_seconds() -&gt; non_neg_integer()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_after-2">get_after/2</a></h3>
+<div class="spec">
+<p><tt>get_after(Table::<a href="#type-table">table()</a>, After::<a href="#type-table_key">table_key()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_after-3"><tt>get_after(safe, Table, After)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_after-3">get_after/3</a></h3>
+<div class="spec">
+<p><tt>get_after(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, After::<a href="#type-table_key">table_key()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Get all the entries in a table greater than or equal to the Key "After". Keys are sorted in
+       erlang term order.
+       <p>Performant on <i>ordered_set</i>s, requires table scans for all other table types</p></p>
+
+<h3 class="function"><a name="get_all_data-1">get_all_data/1</a></h3>
+<div class="spec">
+<p><tt>get_all_data(Table::<a href="#type-table">table()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_all_data-2"><tt>get_all_data(safe, Table)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_all_data-2">get_all_data/2</a></h3>
+<div class="spec">
+<p><tt>get_all_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Get all the data in the table</p>
+
+<h3 class="function"><a name="get_data-2">get_data/2</a></h3>
+<div class="spec">
+<p><tt>get_data(Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_data-3"><tt>get_data(safe, Table, Key)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_data-3">get_data/3</a></h3>
+<div class="spec">
+<p><tt>get_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Get all the records from the Table with the key Key</p>
+
+<h3 class="function"><a name="get_data_by_first_key-1">get_data_by_first_key/1</a></h3>
+<div class="spec">
+<p><tt>get_data_by_first_key(Table::<a href="#type-table">table()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_data_by_first_key-2"><tt>get_data_by_first_key(safe, Table)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_data_by_first_key-2">get_data_by_first_key/2</a></h3>
+<div class="spec">
+<p><tt>get_data_by_first_key(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Get the first item (in erlang term order) in Table.
+       Performant on <i>ordered_set</i>s</p>
+
+<h3 class="function"><a name="get_data_by_last_key-1">get_data_by_last_key/1</a></h3>
+<div class="spec">
+<p><tt>get_data_by_last_key(Table::<a href="#type-table">table()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_data_by_last_key-2"><tt>get_data_by_last_key(safe, Table)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_data_by_last_key-2">get_data_by_last_key/2</a></h3>
+<div class="spec">
+<p><tt>get_data_by_last_key(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Get the last item (in erlang term order) in Table.
+       Performant on <i>ordered_set</i>s</p>
+
+<h3 class="function"><a name="get_data_from_index-3">get_data_from_index/3</a></h3>
+<div class="spec">
+<p><tt>get_data_from_index(Table::<a href="#type-table">table()</a>, Value::<a href="#type-table_key">table_key()</a>, IndexField::<a href="#type-table_key">table_key()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_data_from_index-4"><tt>get_data_from_index(safe, Table, Value, IndexField)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_data_from_index-4">get_data_from_index/4</a></h3>
+<div class="spec">
+<p><tt>get_data_from_index(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Value::<a href="#type-table_key">table_key()</a>, IndexField::<a href="#type-table_key">table_key()</a>) -&gt; [any()]</tt><br></p>
+</div><p>Get all the records from the Table where the Value matches the value
+       in field IndexField
+       <p>e.g. get_data_from_index(test_table_1, "some thing here", value)</p>
+       <p>where 'value' is an indexed field in test_table_1</p></p>
+
+<h3 class="function"><a name="get_env-0">get_env/0</a></h3>
+<div class="spec">
+<p><tt>get_env() -&gt; [{Key::atom(), Value::term()}]</tt><br></p>
+</div><p>Retrieve all key/value pairs in the env for the specified app.</p>
+
+<h3 class="function"><a name="get_env-1">get_env/1</a></h3>
+<div class="spec">
+<p><tt>get_env(Key::atom()) -&gt; term()</tt><br></p>
+</div><p>The official way to get a value from the app's env.
+       Will return the 'undefined' atom if that key is unset.</p>
+
+<h3 class="function"><a name="get_env-2">get_env/2</a></h3>
+<div class="spec">
+<p><tt>get_env(Key::atom(), Default::term()) -&gt; term()</tt><br></p>
+</div><p>The official way to get a value from this application's env.
+       Will return Default if that key is unset.</p>
+
+<h3 class="function"><a name="get_first_n_entries-2">get_first_n_entries/2</a></h3>
+<div class="spec">
+<p><tt>get_first_n_entries(Table::<a href="#type-table">table()</a>, N::pos_integer()) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_first_n_entries-3"><tt>get_first_n_entries(safe, Table, N)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_first_n_entries-3">get_first_n_entries/3</a></h3>
+<div class="spec">
+<p><tt>get_first_n_entries(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, N::pos_integer()) -&gt; [any()]</tt><br></p>
+</div><p>Get the first N entries in the table. <i>First</i> is in erlang term
+       order.
+       <p>Performant on <i>ordered_set</i>s, requires table scans for all other table types</p></p>
+
+<h3 class="function"><a name="get_last_n_entries-2">get_last_n_entries/2</a></h3>
+<div class="spec">
+<p><tt>get_last_n_entries(Table::<a href="#type-table">table()</a>, N::pos_integer()) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_last_n_entries-3"><tt>get_last_n_entries(safe, Table, N)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_last_n_entries-3">get_last_n_entries/3</a></h3>
+<div class="spec">
+<p><tt>get_last_n_entries(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, N::pos_integer()) -&gt; [any()]</tt><br></p>
+</div><p>Get the last N entries (in erlang term order) in Table
+       <p>Performant on <i>ordered_set</i>s</p></p>
+
+<h3 class="function"><a name="get_metatable-0">get_metatable/0</a></h3>
+<div class="spec">
+<p><tt>get_metatable() -&gt; [#app_metatable{}] | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_record_fields-1">get_record_fields/1</a></h3>
+<div class="spec">
+<p><tt>get_record_fields(RecordName::<a href="#type-table_key">table_key()</a>) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_records-1">get_records/1</a></h3>
+<div class="spec">
+<p><tt>get_records(Record::tuple()) -&gt; [any()]</tt><br></p>
+</div><p>Equivalent to <a href="#get_records-2"><tt>get_records(safe, Record)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get_records-2">get_records/2</a></h3>
+<div class="spec">
+<p><tt>get_records(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Record::tuple()) -&gt; [any()]</tt><br></p>
+</div><p>Get any items in the table that (exactly) match Record
+       <p>This is of particular use for bags with <i>timestamp</i> fields. If
+       you pass in a record with <i>timestamp =:= undefined</i>, you will get
+       back all the records that match regardless of the timestamp</p></p>
+
+<h3 class="function"><a name="init_metatable-0">init_metatable/0</a></h3>
+<div class="spec">
+<p><tt>init_metatable() -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="init_metatable-1">init_metatable/1</a></h3>
+<div class="spec">
+<p><tt>init_metatable(Nodes::[node()]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="init_table-1">init_table/1</a></h3>
+<div class="spec">
+<p><tt>init_table(Table::<a href="#type-table">table()</a>) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="init_table-2">init_table/2</a></h3>
+<div class="spec">
+<p><tt>init_table(Table::<a href="#type-table">table()</a>, Nodes::[node()]) -&gt; ok | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="key_exists-2">key_exists/2</a></h3>
+<div class="spec">
+<p><tt>key_exists(Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; boolean()</tt><br></p>
+</div><p>Equivalent to <a href="#key_exists-3"><tt>key_exists(safe, Table, Key)</tt></a>.</p>
+
+
+<h3 class="function"><a name="key_exists-3">key_exists/3</a></h3>
+<div class="spec">
+<p><tt>key_exists(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; boolean()</tt><br></p>
+</div><p>Check to see if a record w/ key Key exists in Table</p>
+
+<h3 class="function"><a name="last_update_to_datetime-1">last_update_to_datetime/1</a></h3>
+<div class="spec">
+<p><tt>last_update_to_datetime(LastUpdate::<a href="#type-last_update">last_update()</a>) -&gt; <a href="calendar.html#type-datetime">calendar:datetime()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="remove_all_data-1">remove_all_data/1</a></h3>
+<div class="spec">
+<p><tt>remove_all_data(Table::<a href="#type-table">table()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Equivalent to <a href="#remove_all_data-2"><tt>remove_all_data(safe, Table)</tt></a>.</p>
+
+
+<h3 class="function"><a name="remove_all_data-2">remove_all_data/2</a></h3>
+<div class="spec">
+<p><tt>remove_all_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Remove <i>all</i> the data in Table</p>
+
+<h3 class="function"><a name="remove_data-2">remove_data/2</a></h3>
+<div class="spec">
+<p><tt>remove_data(Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Equivalent to <a href="#remove_data-3"><tt>remove_data(safe, Table, Key)</tt></a>.</p>
+
+
+<h3 class="function"><a name="remove_data-3">remove_data/3</a></h3>
+<div class="spec">
+<p><tt>remove_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Table::<a href="#type-table">table()</a>, Key::<a href="#type-table_key">table_key()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Remove (all) the record(s) with key Key in Table</p>
+
+<h3 class="function"><a name="remove_record-1">remove_record/1</a></h3>
+<div class="spec">
+<p><tt>remove_record(Record::tuple()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Equivalent to <a href="#remove_record-2"><tt>remove_record(safe, Record)</tt></a>.</p>
+
+
+<h3 class="function"><a name="remove_record-2">remove_record/2</a></h3>
+<div class="spec">
+<p><tt>remove_record(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Record::tuple()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Remove the record Record.
+       <p>Note that <i>all</i> fields need to match, including <i>timestamp</i></p></p>
+
+<h3 class="function"><a name="remove_record_ignoring_timestamp-1">remove_record_ignoring_timestamp/1</a></h3>
+<div class="spec">
+<p><tt>remove_record_ignoring_timestamp(Record::tuple()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Equivalent to <a href="#remove_record_ignoring_timestamp-2"><tt>remove_record_ignoring_timestamp(safe, Record)</tt></a>.</p>
+
+
+<h3 class="function"><a name="remove_record_ignoring_timestamp-2">remove_record_ignoring_timestamp/2</a></h3>
+<div class="spec">
+<p><tt>remove_record_ignoring_timestamp(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Record::tuple()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Remove the record Record ignoring any existing timestamp field.
+       <p>The difference between this and <i>remove_record</i> is that if the
+       record contains a <i>timestamp</i> field, it is ignored.</p>
+       <p>This is of use w/ bags where you might have the same record w/
+       multiple timestamps, and you want them all gone</p></p>
+
+<h3 class="function"><a name="sequence_create-1">sequence_create/1</a></h3>
+<div class="spec">
+<p><tt>sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="sequence_create-2">sequence_create/2</a></h3>
+<div class="spec">
+<p><tt>sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="sequence_current_value-1">sequence_current_value/1</a></h3>
+<div class="spec">
+<p><tt>sequence_current_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="sequence_delete-1">sequence_delete/1</a></h3>
+<div class="spec">
+<p><tt>sequence_delete(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="sequence_next_value-1">sequence_next_value/1</a></h3>
+<div class="spec">
+<p><tt>sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="sequence_next_value-2">sequence_next_value/2</a></h3>
+<div class="spec">
+<p><tt>sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Increment::<a href="#type-sequence_value">sequence_value()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="sequence_set_value-2">sequence_set_value/2</a></h3>
+<div class="spec">
+<p><tt>sequence_set_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
+</div>
+
+<h3 class="function"><a name="set_data-1">set_data/1</a></h3>
+<div class="spec">
+<p><tt>set_data(Value::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Equivalent to <a href="#set_data-2"><tt>set_data(safe, Value)</tt></a>.</p>
+
+
+<h3 class="function"><a name="set_data-2">set_data/2</a></h3>
+<div class="spec">
+<p><tt>set_data(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Value::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Write the record "Value" to the table
+       <p>The table name is element(1, Value)</p></p>
+
+<h3 class="function"><a name="set_data_overwriting_timestamp-1">set_data_overwriting_timestamp/1</a></h3>
+<div class="spec">
+<p><tt>set_data_overwriting_timestamp(Value::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>Equivalent to <a href="#set_data_overwriting_timestamp-2"><tt>set_data_overwriting_timestamp(safe, Value)</tt></a>.</p>
+
+
+<h3 class="function"><a name="set_data_overwriting_timestamp-2">set_data_overwriting_timestamp/2</a></h3>
+<div class="spec">
+<p><tt>set_data_overwriting_timestamp(TransactionType::<a href="#type-transaction_type">transaction_type()</a>, Value::any()) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div><p>If your table is a <i>bag</i> and contains a <i>timestamp</i> field,
+       but you actually don't care about the timestamp in your
+       records, then <i>set_data</i> will create new records each time you write.
+       <p> This is something you probably won't appreciate</p>
+       <p><i>set_data_overwriting_timestamp</i> will delete any existing record w/ the
+       same fields (ignoring timestamp, of course), thus ensuring that the timestamp
+       field doesn't cause spurious writes</p></p>
+
+<h3 class="function"><a name="set_persist_function-2">set_persist_function/2</a></h3>
+<div class="spec">
+<p><tt>set_persist_function(Table::<a href="#type-table">table()</a>, Persist_data::#persist_data{}) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="set_read_transform_function-2">set_read_transform_function/2</a></h3>
+<div class="spec">
+<p><tt>set_read_transform_function(Table::<a href="#type-table">table()</a>, FunctionIdentifier::<a href="#type-function_identifier">function_identifier()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="set_refresh_function-2">set_refresh_function/2</a></h3>
+<div class="spec">
+<p><tt>set_refresh_function(Table::<a href="#type-table">table()</a>, Refresh_data::#refresh_data{}) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="set_write_transform_function-2">set_write_transform_function/2</a></h3>
+<div class="spec">
+<p><tt>set_write_transform_function(Table::<a href="#type-table">table()</a>, FunctionIdentifier::<a href="#type-function_identifier">function_identifier()</a>) -&gt; ok | <a href="#type-error">error()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="setup-0">setup/0</a></h3>
+<div class="spec">
+<p><tt>setup() -&gt; {atomic, ok} | {error, Reason::any()}</tt><br></p>
+</div><p>setup mnesia on this node for disc copies</p>
+
+<h3 class="function"><a name="start-0">start/0</a></h3>
+<div class="spec">
+<p><tt>start() -&gt; ok</tt><br></p>
+</div><p>Start the application and all its dependencies.</p>
+
+<h3 class="function"><a name="stop-0">stop/0</a></h3>
+<div class="spec">
+<p><tt>stop() -&gt; ok</tt><br></p>
+</div><p>Stop the application and all its dependencies.</p>
+
+<h3 class="function"><a name="table_fields-1">table_fields/1</a></h3>
+<div class="spec">
+<p><tt>table_fields(Table::<a href="#type-table">table()</a>) -&gt; <a href="#type-table_fields">table_fields()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="table_info-1">table_info/1</a></h3>
+<div class="spec">
+<p><tt>table_info(Table::<a href="#type-table">table()</a>) -&gt; #app_metatable{} | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="table_time_to_live-1">table_time_to_live/1</a></h3>
+<div class="spec">
+<p><tt>table_time_to_live(Table::<a href="#type-table">table()</a>) -&gt; <a href="#type-time_to_live">time_to_live()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="table_version-1">table_version/1</a></h3>
+<div class="spec">
+<p><tt>table_version(Table::<a href="#type-table">table()</a>) -&gt; <a href="#type-table_version">table_version()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="update_table_time_to_live-2">update_table_time_to_live/2</a></h3>
+<div class="spec">
+<p><tt>update_table_time_to_live(Table::<a href="#type-table">table()</a>, TTL::<a href="#type-time_to_live">time_to_live()</a>) -&gt; {<a href="#type-timestamp">timestamp()</a>, <a href="#type-table_key_position">table_key_position()</a>}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_metatable-0">upgrade_metatable/0</a></h3>
+<div class="spec">
+<p><tt>upgrade_metatable() -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_table-1">upgrade_table/1</a></h3>
+<div class="spec">
+<p><tt>upgrade_table(Table::<a href="#type-table">table()</a>) -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_table-2">upgrade_table/2</a></h3>
+<div class="spec">
+<p><tt>upgrade_table(Table::<a href="#type-table">table()</a>, Fields::[<a href="#type-app_field">app_field()</a>]) -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="upgrade_table-4">upgrade_table/4</a></h3>
+<div class="spec">
+<p><tt>upgrade_table(Table::<a href="#type-table">table()</a>, OldVersion::non_neg_integer(), NewVersion::non_neg_integer(), Fields::[<a href="#type-app_field">app_field()</a>]) -&gt; {atomic, ok} | {aborted, Reason::any()}</tt><br></p>
+</div>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Aug 27 2012, 18:47:50.</i></p>
+</body>
+</html>
