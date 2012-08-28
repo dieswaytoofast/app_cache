@@ -168,7 +168,7 @@ get_table_info(foo_table_2) ->
 
 Write
 -----
-Assuming that the table actually exists, you can write to the table w/ the following functions (look at ```app_cache.erl``` for more details)
+Assuming that the table actually exists, you can write to the table w/ the following functions (look at [the docs](http://dieswaytoofast.github.com/app_cache/) for more details)
 Note that ```TransactionType``` is either **safe** or **dirty**.
 
 1. **safe** will run the queries in 'transactional' mode - i.e., it'll either run through to completion, or fail entirely (with the exception of bag deletes documented elsewhere)
@@ -186,6 +186,8 @@ set_data_overwriting_timestamp | Record | Set data, but ignore the _timestamp_ f
 ok
 (app_cache@pecorino)71> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
 ok
+```
+```erlang
 (app_cache@pecorino)72> app_cache:get_data(test_table_2, foo1).
 [#test_table_2{key = foo1,timestamp = 63513323628,
                value = bar1,name = undefined},
@@ -205,7 +207,7 @@ ok
 
 Read
 ----
-Assuming that the table actually exists, you can read from the tables w/ the following functions (look at ```app_cache.erl``` for more details)
+Assuming that the table actually exists, you can read from the tables w/ the following functions (look at [the docs](http://dieswaytoofast.github.com/app_cache/) for more details)
 Note that ```TransactionType``` is either **safe** or **dirty**.
 
 1. **safe** will run the queries in 'transactional' mode - i.e., it'll either run through to completion, or fail entirely (with the exception of bag deletes documented elsewhere)
@@ -277,12 +279,58 @@ ok
                value = bar2,name = undefined},
  #test_table_1{key = foo3,timestamp = 63513310206,
                value = bar3,name = undefined}]
-  
 ```
            
 **NOTE**
 
 1. In general, any read request above that involves _erlang term order_ will be performant when used on ```ordered_sets```, and probably not when used on ```sets``` or ```bags```
+
+Delete
+------
+Assuming that the table actually exists, you can delete records from the table w/ the following functions (look at [the docs](http://dieswaytoofast.github.com/app_cache/) for more details)
+Note that ```TransactionType``` is either **safe** or **dirty**.
+
+1. **safe** will run the queries in 'transactional' mode - i.e., it'll either run through to completion, or fail entirely (with the exception of bag deletes documented elsewhere)
+2. **dirty** will use mnesia's _dirty_ functions, which will be much (!) faster, but as you can imagine, can leave things in an inconsistent state on failure
+
+Function | Parameters | Description
+-------- | ---------- | --------
+remove_data | Table, Key | Remove (all) the record(s) with key Key in Table
+remove_all_data | Table | Remove _all_ the data in Table
+remove_record | Record | Remove the record Record from the table specified as ```element(1, Record).  Note that _all_ the fields need to match
+remove_record_ignoring_timestamp | Record | Remove the record Record ignoring any existing timestamp field. <p>The difference between this and ```remove_record``` is that if the record contains a ```timestamp``` field, it is ignored.</p> <p>This is of use w/ ```bags``` where you might have the same record w/ multiple timestamps, and you want them all gone</p>
+ 
+
+**EXAMPLES**
+
+```erlang
+(app_cache@pecorino)70> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+ok
+(app_cache@pecorino)71> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+ok
+```
+```erlang
+(app_cache@pecorino)84> app_cache:get_data(test_table_2, foo1).                                                                    
+[#test_table_2{key = foo1,timestamp = 63513331997,
+               value = bar1,name = undefined},
+ #test_table_2{key = foo1,timestamp = 63513331998,
+               value = bar1,name = undefined}]
+(app_cache@pecorino)85> app_cache:remove_record(#test_table_2{key = foo1, timestamp = 63513331997, value = bar1,name = undefined}).
+ok
+(app_cache@pecorino)86> app_cache:get_data(test_table_2, foo1).                                                                    
+[#test_table_2{key = foo1,timestamp = 63513331998,
+               value = bar1,name = undefined}]
+```
+```erlang
+(app_cache@pecorino)86> app_cache:get_data(test_table_2, foo1).                                                                    
+[#test_table_2{key = foo1,timestamp = 63513331998,
+               value = bar1,name = undefined}]
+(app_cache@pecorino)87> app_cache:remove_data(test_table_2, foo1).
+ok
+(app_cache@pecorino)88> app_cache:get_data(test_table_2, foo1).   
+[]
+```
+
 
 
 Credits
