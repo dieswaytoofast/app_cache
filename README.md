@@ -182,9 +182,13 @@ set_data_overwriting_timestamp | Record | Set data, but ignore the _timestamp_ f
 **EXAMPLES**
 
 ```erlang
-(app_cache@pecorino)70> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+(app_cache@pecorino)70> app_cache:set_data(#test_table_2{
+										key = foo1, 
+										value = bar1}).
 ok
-(app_cache@pecorino)71> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+(app_cache@pecorino)71> app_cache:set_data(#test_table_2{
+										key = foo1, 
+										value = bar1}).
 ok
 ```
 ```erlang
@@ -195,9 +199,13 @@ ok
                value = bar1,name = undefined}]     
 ```
 ```erlang
-(app_cache@pecorino)73> app_cache:set_data(#test_table_2{key = foo2, value = bar2}).
+(app_cache@pecorino)73> app_cache:set_data(#test_table_2{
+										key = foo2, 
+										value = bar2}).
 ok
-(app_cache@pecorino)74> app_cache:set_data_overwriting_timestamp(#test_table_2{key = foo2, value = bar2}).
+(app_cache@pecorino)74> app_cache:set_data_overwriting_timestamp(#test_table_2{
+										key = foo2, 
+										value = bar2}).
 ok
 (app_cache@pecorino)75> app_cache:get_data(test_table_2, foo2).                                           
 [#test_table_2{key = foo2,timestamp = 63513323683,
@@ -228,11 +236,17 @@ get_all_data | Table |Get all the data in Table
 **EXAMPLES**
 
 ```erlang
-(app_cache@pecorino)25> app_cache:set_data(#test_table_1{key = foo1, value = bar1}).
+(app_cache@pecorino)25> app_cache:set_data(#test_table_1{
+										key = foo1, 
+										value = bar1}).
 ok      
-(app_cache@pecorino)26> app_cache:set_data(#test_table_1{key = foo2, value = bar2}).
+(app_cache@pecorino)26> app_cache:set_data(#test_table_1{
+										key = foo2, 
+										value = bar2}).
 ok
-(app_cache@pecorino)27> app_cache:set_data(#test_table_1{key = foo3, value = bar3}).
+(app_cache@pecorino)27> app_cache:set_data(#test_table_1{
+										key = foo3, 
+										value = bar3}).
 ok
 ```
 ```erlang
@@ -267,7 +281,9 @@ ok
                value = bar3,name = undefined}]
 ```
 ```erlang
-(app_cache@pecorino)65> app_cache:get_records( #test_table_1{key = foo2, value = bar2}).             
+(app_cache@pecorino)65> app_cache:get_records( #test_table_1{
+										key = foo2, 
+										value = bar2}).             
 [#test_table_1{key = foo2,timestamp = 63513310202,
                value = bar2,name = undefined}]
 ```
@@ -297,16 +313,20 @@ Function | Parameters | Description
 -------- | ---------- | --------
 remove_data | Table, Key | Remove (all) the record(s) with key Key in Table
 remove_all_data | Table | Remove _all_ the data in Table
-remove_record | Record | Remove the record Record from the table specified as ```element(1, Record).  Note that _all_ the fields need to match
+remove_record | Record | Remove the record Record from the table specified as ```element(1, Record)```.  Note that _all_ the fields need to match
 remove_record_ignoring_timestamp | Record | Remove the record Record ignoring any existing timestamp field. <p>The difference between this and ```remove_record``` is that if the record contains a ```timestamp``` field, it is ignored.</p> <p>This is of use w/ ```bags``` where you might have the same record w/ multiple timestamps, and you want them all gone</p>
  
 
 **EXAMPLES**
 
 ```erlang
-(app_cache@pecorino)70> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+(app_cache@pecorino)70> app_cache:set_data(#test_table_2{
+										key = foo1, 
+										value = bar1}).
 ok
-(app_cache@pecorino)71> app_cache:set_data(#test_table_2{key = foo1, value = bar1}).
+(app_cache@pecorino)71> app_cache:set_data(#test_table_2{
+										key = foo1, 
+										value = bar1}).
 ok
 ```
 ```erlang
@@ -315,7 +335,11 @@ ok
                value = bar1,name = undefined},
  #test_table_2{key = foo1,timestamp = 63513331998,
                value = bar1,name = undefined}]
-(app_cache@pecorino)85> app_cache:remove_record(#test_table_2{key = foo1, timestamp = 63513331997, value = bar1,name = undefined}).
+(app_cache@pecorino)85> app_cache:remove_record(#test_table_2{
+										key = foo1, 
+										timestamp = 63513331997, 
+										value = bar1,
+										name = undefined}).
 ok
 (app_cache@pecorino)86> app_cache:get_data(test_table_2, foo1).                                                                    
 [#test_table_2{key = foo1,timestamp = 63513331998,
