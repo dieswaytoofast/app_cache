@@ -25,7 +25,7 @@
 
 %% Mnesia utility APIs
 -export([get_env/0, get_env/1, get_env/2]).
--export([setup/0, setup/1
+-export([setup/0, setup/1,
          start/0, stop/0, 
          cache_init/1, cache_init/2,
          init_metatable/0, init_metatable/1, init_table/1, init_table/2,
@@ -65,7 +65,8 @@
 -export([sequence_create/1, sequence_create/2, 
          sequence_set_value/2, 
          sequence_current_value/1, sequence_next_value/1, sequence_next_value/2, 
-         sequence_delete/1]).
+         sequence_delete/1,
+         sequence_all_sequences/0]).
 -export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3, 
          cached_sequence_set_value/2, 
          cached_sequence_current_value/1, cached_sequence_next_value/1, cached_sequence_next_value/2,
@@ -92,7 +93,7 @@
 setup() ->
     setup([node()]).
 
--spec setup() -> {atomic, ok} | {error, Reason::any()}.
+-spec setup([node()]) -> {atomic, ok} | {error, Reason::any()}.
 %% @doc Does the necessary housekeeping on these nodes to run Disc Nodes
 setup(Nodes) when is_list(Nodes) ->
     mnesia:create_schema(Nodes).
