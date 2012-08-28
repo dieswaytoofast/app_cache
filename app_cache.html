@@ -20,15 +20,19 @@
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cache_init-1">cache_init/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#cache_init-2">cache_init/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#cache_time_to_live-1">cache_time_to_live/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_all_sequences-0">cached_sequence_all_sequences/0</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_create-1">cached_sequence_create/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_create-2">cached_sequence_create/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_create-3">cached_sequence_create/3</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_current_value-1">cached_sequence_current_value/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_delete-1">cached_sequence_delete/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_next_value-1">cached_sequence_next_value/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_next_value-2">cached_sequence_next_value/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cached_sequence_set_value-2">cached_sequence_set_value/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cached_sequence_all_sequences-0">cached_sequence_all_sequences/0</a></td><td>Returns the list of all the sequences known to app_cache.</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_create-1">cached_sequence_create/1</a></td><td>Equivalent to <a href="#cached_sequence_create-3"><tt>cached_sequence_create(Key, 1, 10)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_create-2">cached_sequence_create/2</a></td><td>Equivalent to <a href="#cached_sequence_create-3"><tt>cached_sequence_create(Key, Start, 10)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_create-3">cached_sequence_create/3</a></td><td>Create a cached sequence identified by Key, starting at Start, returning
+       UpperBoundIncrement values at a time.</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_current_value-1">cached_sequence_current_value/1</a></td><td>Get the current value of the cached sequence identified by Key.</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_delete-1">cached_sequence_delete/1</a></td><td>Remove the cached sequence identified by Key.</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_next_value-1">cached_sequence_next_value/1</a></td><td>Equivalent to <a href="#cached_sequence_next_value-2"><tt>cached_sequence_next_value(Key, 1)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_next_value-2">cached_sequence_next_value/2</a></td><td>Get the next value of the cached sequence identified by Key.</td></tr>
+<tr><td valign="top"><a href="#cached_sequence_set_value-2">cached_sequence_set_value/2</a></td><td>Set the cached sequence identified by Key to value Start.</td></tr>
 <tr><td valign="top"><a href="#create_metatable-0">create_metatable/0</a></td><td></td></tr>
 <tr><td valign="top"><a href="#create_metatable-1">create_metatable/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#create_table-1">create_table/1</a></td><td></td></tr>
@@ -89,13 +93,15 @@
 <tr><td valign="top"><a href="#remove_record_ignoring_timestamp-1">remove_record_ignoring_timestamp/1</a></td><td>Equivalent to <a href="#remove_record_ignoring_timestamp-2"><tt>remove_record_ignoring_timestamp(safe, Record)</tt></a>.
 </td></tr>
 <tr><td valign="top"><a href="#remove_record_ignoring_timestamp-2">remove_record_ignoring_timestamp/2</a></td><td>Remove the record Record ignoring any existing timestamp field.</td></tr>
-<tr><td valign="top"><a href="#sequence_create-1">sequence_create/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#sequence_create-2">sequence_create/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#sequence_current_value-1">sequence_current_value/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#sequence_delete-1">sequence_delete/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#sequence_next_value-1">sequence_next_value/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#sequence_next_value-2">sequence_next_value/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#sequence_set_value-2">sequence_set_value/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#sequence_create-1">sequence_create/1</a></td><td>Equivalent to <a href="#sequence_create-2"><tt>sequence_create(Key, 1)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#sequence_create-2">sequence_create/2</a></td><td>Create a sequence identified by Key, starting at Start.</td></tr>
+<tr><td valign="top"><a href="#sequence_current_value-1">sequence_current_value/1</a></td><td>Get the current value of the sequence identified by Key.</td></tr>
+<tr><td valign="top"><a href="#sequence_delete-1">sequence_delete/1</a></td><td>Remove the sequence identified by Key.</td></tr>
+<tr><td valign="top"><a href="#sequence_next_value-1">sequence_next_value/1</a></td><td>Equivalent to <a href="#sequence_next_value-2"><tt>sequence_next_value(Key, 1)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#sequence_next_value-2">sequence_next_value/2</a></td><td>Get the next value of the sequence identified by Key incremented by Increment.</td></tr>
+<tr><td valign="top"><a href="#sequence_set_value-2">sequence_set_value/2</a></td><td>Set the value of the sequence identified by Key to Start.</td></tr>
 <tr><td valign="top"><a href="#set_data-1">set_data/1</a></td><td>Equivalent to <a href="#set_data-2"><tt>set_data(safe, Value)</tt></a>.
 </td></tr>
 <tr><td valign="top"><a href="#set_data-2">set_data/2</a></td><td>Write the record "Value" to the table.</td></tr>
@@ -108,7 +114,9 @@
 <tr><td valign="top"><a href="#set_read_transform_function-2">set_read_transform_function/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#set_refresh_function-2">set_refresh_function/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#set_write_transform_function-2">set_write_transform_function/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#setup-0">setup/0</a></td><td>setup mnesia on this node for disc copies.</td></tr>
+<tr><td valign="top"><a href="#setup-0">setup/0</a></td><td>Equivalent to <a href="#setup-1"><tt>setup([node()])</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#setup-1">setup/1</a></td><td>Does the necessary housekeeping on these nodes to run Disc Nodes.</td></tr>
 <tr><td valign="top"><a href="#start-0">start/0</a></td><td>Start the application and all its dependencies.</td></tr>
 <tr><td valign="top"><a href="#stop-0">stop/0</a></td><td>Stop the application and all its dependencies.</td></tr>
 <tr><td valign="top"><a href="#table_fields-1">table_fields/1</a></td><td></td></tr>
@@ -142,47 +150,51 @@
 <h3 class="function"><a name="cached_sequence_all_sequences-0">cached_sequence_all_sequences/0</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_all_sequences() -&gt; [#sequence_cache{}]</tt><br></p>
-</div>
+</div><p>Returns the list of all the sequences known to app_cache</p>
 
 <h3 class="function"><a name="cached_sequence_create-1">cached_sequence_create/1</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Equivalent to <a href="#cached_sequence_create-3"><tt>cached_sequence_create(Key, 1, 10)</tt></a>.</p>
+
 
 <h3 class="function"><a name="cached_sequence_create-2">cached_sequence_create/2</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Equivalent to <a href="#cached_sequence_create-3"><tt>cached_sequence_create(Key, Start, 10)</tt></a>.</p>
+
 
 <h3 class="function"><a name="cached_sequence_create-3">cached_sequence_create/3</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>, UpperBoundIncrement::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Create a cached sequence identified by Key, starting at Start, returning
+       UpperBoundIncrement values at a time</p>
 
 <h3 class="function"><a name="cached_sequence_current_value-1">cached_sequence_current_value/1</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_current_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
-</div>
+</div><p>Get the current value of the cached sequence identified by Key</p>
 
 <h3 class="function"><a name="cached_sequence_delete-1">cached_sequence_delete/1</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_delete(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Remove the cached sequence identified by Key</p>
 
 <h3 class="function"><a name="cached_sequence_next_value-1">cached_sequence_next_value/1</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
-</div>
+</div><p>Equivalent to <a href="#cached_sequence_next_value-2"><tt>cached_sequence_next_value(Key, 1)</tt></a>.</p>
+
 
 <h3 class="function"><a name="cached_sequence_next_value-2">cached_sequence_next_value/2</a></h3>
 <div class="spec">
 <p><tt>cached_sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Increment::<a href="#type-sequence_value">sequence_value()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
-</div>
+</div><p>Get the next value of the cached sequence identified by Key</p>
 
 <h3 class="function"><a name="cached_sequence_set_value-2">cached_sequence_set_value/2</a></h3>
 <div class="spec">
-<p><tt>cached_sequence_set_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Value::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
-</div>
+<p><tt>cached_sequence_set_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
+</div><p>Set the cached sequence identified by Key to value Start</p>
 
 <h3 class="function"><a name="create_metatable-0">create_metatable/0</a></h3>
 <div class="spec">
@@ -446,37 +458,39 @@
 <h3 class="function"><a name="sequence_create-1">sequence_create/1</a></h3>
 <div class="spec">
 <p><tt>sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Equivalent to <a href="#sequence_create-2"><tt>sequence_create(Key, 1)</tt></a>.</p>
+
 
 <h3 class="function"><a name="sequence_create-2">sequence_create/2</a></h3>
 <div class="spec">
 <p><tt>sequence_create(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Create a sequence identified by Key, starting at Start</p>
 
 <h3 class="function"><a name="sequence_current_value-1">sequence_current_value/1</a></h3>
 <div class="spec">
 <p><tt>sequence_current_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
-</div>
+</div><p>Get the current value of the sequence identified by Key</p>
 
 <h3 class="function"><a name="sequence_delete-1">sequence_delete/1</a></h3>
 <div class="spec">
 <p><tt>sequence_delete(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Remove the sequence identified by Key</p>
 
 <h3 class="function"><a name="sequence_next_value-1">sequence_next_value/1</a></h3>
 <div class="spec">
 <p><tt>sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
-</div>
+</div><p>Equivalent to <a href="#sequence_next_value-2"><tt>sequence_next_value(Key, 1)</tt></a>.</p>
+
 
 <h3 class="function"><a name="sequence_next_value-2">sequence_next_value/2</a></h3>
 <div class="spec">
 <p><tt>sequence_next_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Increment::<a href="#type-sequence_value">sequence_value()</a>) -&gt; <a href="#type-sequence_value">sequence_value()</a></tt><br></p>
-</div>
+</div><p>Get the next value of the sequence identified by Key incremented by Increment</p>
 
 <h3 class="function"><a name="sequence_set_value-2">sequence_set_value/2</a></h3>
 <div class="spec">
 <p><tt>sequence_set_value(Key::<a href="#type-sequence_key">sequence_key()</a>, Start::<a href="#type-sequence_value">sequence_value()</a>) -&gt; ok</tt><br></p>
-</div>
+</div><p>Set the value of the sequence identified by Key to Start</p>
 
 <h3 class="function"><a name="set_data-1">set_data/1</a></h3>
 <div class="spec">
@@ -530,7 +544,13 @@
 <h3 class="function"><a name="setup-0">setup/0</a></h3>
 <div class="spec">
 <p><tt>setup() -&gt; {atomic, ok} | {error, Reason::any()}</tt><br></p>
-</div><p>setup mnesia on this node for disc copies</p>
+</div><p>Equivalent to <a href="#setup-1"><tt>setup([node()])</tt></a>.</p>
+
+
+<h3 class="function"><a name="setup-1">setup/1</a></h3>
+<div class="spec">
+<p><tt>setup(Nodes::[node()]) -&gt; {atomic, ok} | {error, Reason::any()}</tt><br></p>
+</div><p>Does the necessary housekeeping on these nodes to run Disc Nodes</p>
 
 <h3 class="function"><a name="start-0">start/0</a></h3>
 <div class="spec">
@@ -589,6 +609,6 @@
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Aug 27 2012, 18:47:50.</i></p>
+<p><i>Generated by EDoc, Aug 28 2012, 16:27:28.</i></p>
 </body>
 </html>
