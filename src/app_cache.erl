@@ -25,7 +25,8 @@
 
 %% Mnesia utility APIs
 -export([get_env/0, get_env/1, get_env/2]).
--export([setup/0, start/0, stop/0, 
+-export([setup/0, setup/1
+         start/0, stop/0, 
          cache_init/1, cache_init/2,
          init_metatable/0, init_metatable/1, init_table/1, init_table/2,
          get_metatable/0,
@@ -84,84 +85,17 @@
 %% API Function Definitions
 %% ------------------------------------------------------------------
 %%
-%% Environment helper functions
-%%
-
-%% @doc Retrieve all key/value pairs in the env for the specified app.
--spec get_env() -> [{Key :: atom(), Value :: term()}].
-get_env() ->
-    application:get_all_env(?SERVER).
-
-%% @doc The official way to get a value from the app's env.
-%%      Will return the 'undefined' atom if that key is unset.
--spec get_env(Key :: atom()) -> term().
-get_env(Key) ->
-    get_env(Key, undefined).
-
-%% @doc The official way to get a value from this application's env.
-%%      Will return Default if that key is unset.
--spec get_env(Key :: atom(), Default :: term()) -> term().
-get_env(Key, Default) ->
-    case application:get_env(?SERVER, Key) of
-        {ok, Value} ->
-            Value;
-        _ ->
-            Default
-    end.
-%%
-%% Application utility functions
-%%
-
-%% @doc Start the application and all its dependencies.
--spec start() -> ok.
-start() ->
-    start_deps(?SERVER).
-
--spec start_deps(App :: atom()) -> ok.
-start_deps(App) ->
-    application:load(App),
-    {ok, Deps} = application:get_key(App, applications),
-    lists:foreach(fun start_deps/1, Deps),
-    start_app(App).
-
--spec start_app(App :: atom()) -> ok.
-start_app(App) ->
-    case application:start(App) of
-        {error, {already_started, _}} -> ok;
-        ok                            -> ok
-    end.
-
-
-%% @doc Stop the application and all its dependencies.
--spec stop() -> ok.
-stop() ->
-    stop_deps(?SERVER).
-
--spec stop_deps(App :: atom()) -> ok.
-stop_deps(App) ->
-    stop_app(App),
-    {ok, Deps} = application:get_key(App, applications),
-    lists:foreach(fun stop_deps/1, lists:reverse(Deps)).
-
--spec stop_app(App :: atom()) -> ok.
-stop_app(kernel) ->
-    ok;
-stop_app(stdlib) ->
-    ok;
-stop_app(App) ->
-    case application:stop(App) of
-        {error, {not_started, _}} -> ok;
-        ok                        -> ok
-    end.
-
-
-%%
 %% Mnesia utility functions
 %%
-%% @doc setup mnesia on this node for disc copies
 -spec setup() -> {atomic, ok} | {error, Reason::any()}.
+%% @equiv setup([node()])
 setup() ->
-    mnesia:create_schema([node()]).
+    setup([node()]).
+
+-spec setup() -> {atomic, ok} | {error, Reason::any()}.
+%% @doc Does the necessary housekeeping on these nodes to run Disc Nodes
+setup(Nodes) when is_list(Nodes) ->
+    mnesia:create_schema(Nodes).
 
 -spec init_metatable() -> ok | {aborted, Reason :: any()}.
 init_metatable() ->
@@ -480,19 +414,23 @@ remove_record_ignoring_timestamp(TransactionType, Record) ->
     app_cache_processor:delete_record(TransactionType, _IgnoreTimestamp = true, Record).
 
 -spec sequence_create(sequence_key()) -> ok.
+%% @equiv sequence_create(Key, 1)
 sequence_create(Key) ->
     Start = get_env(cache_start, ?DEFAULT_CACHE_START),
     sequence_create(Key, Start).
 
 -spec sequence_create(sequence_key(), sequence_value()) -> ok.
+%% @doc Create a sequence identified by Key, starting at Start
 sequence_create(Key, Start) when Start >= 0 ->
     set_data(?TRANSACTION_TYPE_SAFE, {?SEQUENCE_TABLE, Key, Start}).
 
 -spec sequence_set_value(sequence_key(), sequence_value()) -> ok.
+%% @doc Set the value of the sequence identified by Key to Start
 sequence_set_value(Key, Start) when Start >= 0 ->
     sequence_create(Key, Start).
 
 -spec sequence_current_value(sequence_key()) -> sequence_value().
+%% @doc Get the current value of the sequence identified by Key
 sequence_current_value(Key) ->
     Data = get_data(?TRANSACTION_TYPE_SAFE, ?SEQUENCE_TABLE, Key),
     case get_sequence_value(Data) of
@@ -504,55 +442,73 @@ sequence_current_value(Key) ->
     end.
 
 -spec sequence_next_value(sequence_key()) -> sequence_value().
+%% @equiv sequence_next_value(Key, 1)
 sequence_next_value(Key) ->
     Increment = get_env(cache_increment, ?DEFAULT_CACHE_INCREMENT),
     sequence_next_value(Key, Increment).
 
 -spec sequence_next_value(sequence_key(), sequence_value()) -> sequence_value().
+%% @doc Get the next value of the sequence identified by Key incremented by Increment
 sequence_next_value(Key, Increment) when is_integer(Increment) ->
     app_cache_processor:increment_data(?SEQUENCE_TABLE, Key, Increment).
 
 
 -spec sequence_delete(sequence_key()) -> ok.
+%% @doc Remove the sequence identified by Key
 sequence_delete(Key) ->
     remove_data(?TRANSACTION_TYPE_SAFE, ?SEQUENCE_TABLE, Key).
 
 -spec cached_sequence_create(sequence_key()) -> ok.
+%% @equiv cached_sequence_create(Key, 1, 10)
 cached_sequence_create(Key) ->
     Start = get_env(cache_start, ?DEFAULT_CACHE_START),
     cached_sequence_create(Key, Start).
 
 -spec cached_sequence_create(sequence_key(), sequence_value()) -> ok.
+%% @equiv cached_sequence_create(Key, Start, 10)
 cached_sequence_create(Key, Start) when Start >= 0 ->
     UpperBoundIncrement = get_env(cache_upper_bound_increment, ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT),
     cached_sequence_create(Key, Start, UpperBoundIncrement).
 
 -spec cached_sequence_create(sequence_key(), sequence_value(), sequence_value()) -> ok.
+%% @doc Create a cached sequence identified by Key, starting at Start, returning
+%%      UpperBoundIncrement values at a time
 cached_sequence_create(Key, Start, UpperBoundIncrement) when Start >= 0, UpperBoundIncrement >= 0 ->
     gen_server:call(?SEQUENCE_CACHE, {create, Key, Start, UpperBoundIncrement}).
 
 -spec cached_sequence_set_value(sequence_key(), sequence_value()) -> ok.
-cached_sequence_set_value(Key, Value) when Value >= 0 ->
-    gen_server:call(?SEQUENCE_CACHE, {set_value, Key, Value}).
+%% @doc Set the cached sequence identified by Key to value Start
+cached_sequence_set_value(Key, Start) when Start >= 0 ->
+    gen_server:call(?SEQUENCE_CACHE, {set_value, Key, Start}).
 
 -spec cached_sequence_current_value(sequence_key()) -> sequence_value().
+%% @doc Get the current value of the cached sequence identified by Key
 cached_sequence_current_value(Key) ->
     gen_server:call(?SEQUENCE_CACHE, {current_value, Key}).
 
 -spec cached_sequence_next_value(sequence_key()) -> sequence_value().
+%% @equiv cached_sequence_next_value(Key, 1)
 cached_sequence_next_value(Key) ->
     Increment = get_env(cache_increment, ?DEFAULT_CACHE_INCREMENT),
     cached_sequence_next_value(Key, Increment).
 
 -spec cached_sequence_next_value(sequence_key(), sequence_value()) -> sequence_value().
+%% @doc Get the next value of the cached sequence identified by Key
 cached_sequence_next_value(Key, Increment) when is_integer(Increment) ->
     gen_server:call(?SEQUENCE_CACHE, {next_value, Key, Increment}).
 
 -spec cached_sequence_delete(sequence_key()) -> ok.
+%% @doc Remove the cached sequence identified by Key
 cached_sequence_delete(Key) ->
     gen_server:call(?SEQUENCE_CACHE, {delete, Key}).
 
+-spec sequence_all_sequences() -> [#sequence_cache{}].
+%% @equiv cached_sequence_all_sequences()
+sequence_all_sequences() ->
+    gen_server:call(?SEQUENCE_CACHE, {all_sequences}).
+
 -spec cached_sequence_all_sequences() -> [#sequence_cache{}].
+%% @doc Returns the list of all the sequences known to app_cache
 cached_sequence_all_sequences() ->
     gen_server:call(?SEQUENCE_CACHE, {all_sequences}).
 
@@ -580,6 +536,78 @@ set_persist_function(Table, PersistData) ->
 -spec get_record_fields(table_key()) -> list().
 get_record_fields(RecordName) ->
     fields(RecordName).
+
+%%
+%% Environment helper functions
+%%
+
+%% @doc Retrieve all key/value pairs in the env for the specified app.
+-spec get_env() -> [{Key :: atom(), Value :: term()}].
+get_env() ->
+    application:get_all_env(?SERVER).
+
+%% @doc The official way to get a value from the app's env.
+%%      Will return the 'undefined' atom if that key is unset.
+-spec get_env(Key :: atom()) -> term().
+get_env(Key) ->
+    get_env(Key, undefined).
+
+%% @doc The official way to get a value from this application's env.
+%%      Will return Default if that key is unset.
+-spec get_env(Key :: atom(), Default :: term()) -> term().
+get_env(Key, Default) ->
+    case application:get_env(?SERVER, Key) of
+        {ok, Value} ->
+            Value;
+        _ ->
+            Default
+    end.
+%%
+%% Application utility functions
+%%
+
+%% @doc Start the application and all its dependencies.
+-spec start() -> ok.
+start() ->
+    start_deps(?SERVER).
+
+-spec start_deps(App :: atom()) -> ok.
+start_deps(App) ->
+    application:load(App),
+    {ok, Deps} = application:get_key(App, applications),
+    lists:foreach(fun start_deps/1, Deps),
+    start_app(App).
+
+-spec start_app(App :: atom()) -> ok.
+start_app(App) ->
+    case application:start(App) of
+        {error, {already_started, _}} -> ok;
+        ok                            -> ok
+    end.
+
+
+%% @doc Stop the application and all its dependencies.
+-spec stop() -> ok.
+stop() ->
+    stop_deps(?SERVER).
+
+-spec stop_deps(App :: atom()) -> ok.
+stop_deps(App) ->
+    stop_app(App),
+    {ok, Deps} = application:get_key(App, applications),
+    lists:foreach(fun stop_deps/1, lists:reverse(Deps)).
+
+-spec stop_app(App :: atom()) -> ok.
+stop_app(kernel) ->
+    ok;
+stop_app(stdlib) ->
+    ok;
+stop_app(App) ->
+    case application:stop(App) of
+        {error, {not_started, _}} -> ok;
+        ok                        -> ok
+    end.
+
 
 
 %% ------------------------------------------------------------------

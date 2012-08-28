@@ -355,7 +355,43 @@ ok
 []
 ```
 
+Sequences
+---------
+_app_cache_ can be used to abstract sequences.
 
+Oh wait a minute.  You know what sequences are, right?  Basically, something that returns (incrementing) values, like 1,2,3,4,5,6….
+
+In app_cache, there are two kinds of sequences, _regular_ and _cached_.  Both the sequences are mnesia based, and will consequently survive restarts, the difference is primarily in performance.
+
+_Regular Sequences_ : Every time you need the next item in the sequence, you ask for ```next_value```. You use that value, and when you need a new one, you ask again.
+
+_Cached Sequences_ : Every time you ask for ```next_value``` you get a 'bucket' of sequence values (10 at a time, 20 at a time, whatever).  You run through those internally in your code, and the next time you ask for ```next_value```, you get a _new_ bucket of values.  The point being that you don't need to go hit _app_cache_ (and hence _mnesia_) for each new value, and your code is a bit more performant
+
+_Sequences_ are identified with _Keys_, you can have as many (or as few) sequences going at any point in time…
+
+**REGULAR SEQUENCES**
+
+Function | Parameters | Description
+-------- | ---------- | --------
+sequence_create | Key | Create a sequence identified by Key, starting at 1
+sequence_create | Key, Start | Create a sequence identified by Key, starting at Start
+sequence_current_value | Key | Get the current value of the sequence identified by Key
+sequence_next_value | Key | Get the next value of the sequence identified by Key incremented by 1
+sequence_next_value | Key, Increment | Get the next value of the sequence identified by Key incremented by Increment
+sequence_set_value | Key, Start | Set the current value of the sequence identified by Key to Start
+sequence_delete | Key | Remove the sequence identified by Key
+-------- | ---------- | --------
+sequence_all_sequences | none | List all the known sequences (regular _and_ cached)
+cached_sequence_all_sequences | none | List all the known sequences (regular _and_ cached).<p>This is the same as ```sequence_all_sequences()```</p>
+-------- | ---------- | --------
+cached_sequence_create | Key | Create a sequence identified by Key, starting at 1
+cached_sequence_create | Key, Start | Create a sequence identified by Key, starting at Start
+cached_sequence_create | Key, Start, BucketSize | Create a sequence identified by Key, starting at Start, with a bucket size of BucketSize
+cached_sequence_current_value | Key | Get the current value of the sequence identified by Key
+cached_sequence_next_value | Key | Get the next value of the sequence identified by Key incremented by 1
+cached_sequence_next_value | Key, Increment | Get the next value of the sequence identified by Key incremented by Increment
+cached_sequence_set_value | Key, Start | Set the current value of the sequence identified by Key to Start
+cached_sequence_delete | Key | Remove the sequence identified by Key
 
 Credits
 =======
