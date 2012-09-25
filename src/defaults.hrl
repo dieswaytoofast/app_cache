@@ -46,7 +46,7 @@
 -record(refresh_data, {
           before_each_read = false                          :: boolean(),
           after_each_read = false                           :: boolean(),
-            refresh_interval = ?INFINITY                      :: time_to_live(),   % Seconds
+          refresh_interval = ?INFINITY                      :: time_to_live(),   % Seconds
           function_identifier                               :: function_identifier()
          }).
 
@@ -56,17 +56,17 @@
          }).
 
 -record(app_metatable, {
-          table                                             :: table(),
-          version = ?META_VERSION                           :: table_version(),
-          time_to_live = ?INFINITY                          :: time_to_live(),    %% in seconds
-          type = ?DEFAULT_TYPE                              :: table_type(),
-          fields = []                                       :: [table_key()],
-          secondary_index_fields = []                       :: [table_key()],
-          read_transform_function                           :: function_identifier(),
-          write_transform_function                          :: function_identifier(),
-          refresh_function = #refresh_data{}                :: #refresh_data{},
-          persist_function = #persist_data{}                :: #persist_data{},
-          last_update = 0                                   :: non_neg_integer(),
+          table                                             :: table() | '_',
+          version = ?META_VERSION                           :: table_version() | '_',
+          time_to_live = ?INFINITY                          :: time_to_live() | '_',    %% in seconds
+          type = ?DEFAULT_TYPE                              :: table_type() | '_',
+          fields = []                                       :: [table_key()] | '_',
+          secondary_index_fields = []                       :: [table_key()] | '_',
+          read_transform_function                           :: function_identifier() | '_',
+          write_transform_function                          :: function_identifier() | '_',
+          refresh_function = #refresh_data{}                :: #refresh_data{} | '_',
+          persist_function = #persist_data{}                :: #persist_data{} | '_',
+          last_update = 0                                   :: non_neg_integer() | '_',
           reason                                            :: any(),
           extras                                            :: any()
          }).
@@ -82,10 +82,10 @@
 -define(REFRESH_TABLE, refresh_table).
 -record(?REFRESH_TABLE, {
             key                                             :: refresh_key(),
-            value                                           :: table_key(),
-            time_to_live                                    :: time_to_live(),
-            last_update                                     :: non_neg_integer(),
-            timer                                           :: timer2:tref()
+            value                                           :: table_key() | '_',
+            time_to_live                                    :: time_to_live() | '_',
+            last_update                                     :: non_neg_integer() | '_',
+            timer                                           :: timer2:tref() | '$2'
             }).
 
 -define(REFRESH_TABLE_DEF, #app_metatable{
