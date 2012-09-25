@@ -157,7 +157,7 @@ update_upper_bound(Sequence) ->
     % sequence was incremeneted past the old value
     if NewUpperBound =< CachedValue ->
             FinalUpperBound = CachedValue + UpperBoundIncrement,
-            app_cache:sequence_init(Key, FinalUpperBound),
+            app_cache:sequence_create(Key, FinalUpperBound),
             Sequence#sequence_cache{cached_value = CachedValue,
                                   upper_bound = FinalUpperBound};
         true ->
