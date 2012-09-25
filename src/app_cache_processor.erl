@@ -739,9 +739,6 @@ read_first_n_entries(TransactionType, Table, N) when N > 0 ->
 %%      Returns true if the update needs to happen *before* the read
 -spec refresh_if_necessary(#app_metatable{}, [table_key()]) -> boolean().
 refresh_if_necessary(#app_metatable{
-                refresh_function = undefined}, _Keys) -> 
-    false;
-refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     function_identifier = undefined}}, _Keys) -> 
     false;
@@ -813,10 +810,6 @@ write_data_overwriting_timestamp(TransactionType, Data) ->
 %%      with OverwriteTimestamp =:= true, this will delete any existing records w/ the same
 %%      key
 -spec persist_data(#data_functions{}, transaction_type(), boolean(), any(), any()) -> ok | error().
-persist_data(#data_functions{persist_function = undefined}, 
-             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
-    write_data_to_cache(TransactionType, OverwriteTimestamp, Data,
-                        ClearedTimestampData);
 persist_data(#data_functions{persist_function = 
                              #persist_data{function_identifier = undefined}}, 
              TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
