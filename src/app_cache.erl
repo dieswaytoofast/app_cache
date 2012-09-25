@@ -116,7 +116,7 @@ cache_init(Tables) ->
     Nodes = get_env(cache_nodes, [node()]),
     cache_init(Nodes, Tables).
 
--spec cache_init([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec cache_init([node()], [#app_metatable{}]) -> ok | error().
 cache_init(Nodes, Tables) ->
     gen_server:call(?PROCESSOR, {cache_init, Nodes, Tables}).
 

@@ -311,13 +311,12 @@ load_metatable_internal() ->
                     mnesia:match_object(#app_metatable{_ = '_'}) end),
     Data.
 
--spec cache_init_internal([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec cache_init_internal([node()], [#app_metatable{}]) -> ok | error().
 cache_init_internal(Nodes, Tables) ->
     try
         lists:foreach(fun(#app_metatable{table = Table}) -> 
                            init_table_internal(Table, Nodes, Tables)
-                  end, Tables),
-        Tables
+                  end, Tables)
     catch
         _:Error ->
             lager:error("Error ~p initializing mnesia.  Did you forget to run ~p:setup()?~n", [Error, ?SERVER]),
