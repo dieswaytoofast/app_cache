@@ -91,7 +91,7 @@ start_link() ->
 start_link(Nodes) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Nodes], []).
 
--spec get_ttl_and_field_index(#app_metatable{}) -> {timestamp(), table_key_position()}.
+-spec get_ttl_and_field_index(#app_metatable{}) -> {time_to_live(), table_key_position()} | error().
 get_ttl_and_field_index(TableInfo) ->
     get_ttl_and_field_index_internal(TableInfo).
 
@@ -859,11 +859,11 @@ roll_back_write(TransactionType, _OverwriteTimestamp = true, Record) ->
 %%%
 
 %% Increments
--spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
+-spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value()) -> ok | error().
 increment_data(_TransactionType, Table, Key, Value) ->
     increment_data(Table, Key, Value).
 
--spec increment_data(Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
+-spec increment_data(Table::table(), Key::table_key(), Value::sequence_value()) -> sequence_value() | error().
 increment_data(Table, Key, Value) ->
     mnesia:dirty_update_counter(Table, Key, Value).
 
@@ -1176,8 +1176,8 @@ cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
             {error, {Reason, MData}}
     end.
 
--spec get_ttl_and_field_index_internal(#app_metatable{}) -> time_to_live().
-get_ttl_and_field_index_internal(TableInfo) -> 
+-spec get_ttl_and_field_index_internal(#app_metatable{}) -> time_to_live() | error().
+get_ttl_and_field_index_internal(TableInfo) ->
     try
         #app_metatable{time_to_live = TTL, fields = Fields} = TableInfo,
         FieldIndex = get_index(?TIMESTAMP, Fields),
@@ -1357,7 +1357,7 @@ validate_function_identifier(_) ->
     false.
 
 %% @doc Remove the refresher entry if there are no more keys
--spec delete_refresher_if_necessary(transaction_type(), table(), table_key()) -> ok.
+-spec delete_refresher_if_necessary(transaction_type(), table(), table_key()) -> ok | error().
 delete_refresher_if_necessary(TransactionType, Table, Key) ->
     case check_key_exists(TransactionType, Table, Key) of
         false ->

@@ -614,7 +614,7 @@ stop_app(App) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
--spec get_sequence_value([{sequence_key(), sequence_value()}]) -> sequence_value().
+-spec get_sequence_value([{sequence_key(), sequence_value()}]) -> sequence_value() | undefined.
 get_sequence_value([]) ->
     undefined;
 get_sequence_value([{_Table, _Key, Value}]) ->

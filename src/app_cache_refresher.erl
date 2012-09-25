@@ -69,7 +69,7 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
--spec refresh_data(transaction_type(), table(), [table_key()]) -> ok | error().
+-spec refresh_data(async | sync, table(), [table_key()]) -> ok | error().
 refresh_data(async, Table, KeyList) ->
     gen_server:cast(?SERVER, {refresh_data, Table, KeyList});
 refresh_data(sync, Table, KeyList) ->
