@@ -224,8 +224,6 @@ reset_cache_internal() ->
     %% using the table's time-to-live as the timer interval.
     {atomic, Metatables} = mnesia:transaction(fun() -> mnesia:match_object( #app_metatable{_ = '_'}) end ),
     lists:foldl(fun
-            (#app_metatable{table = _Table, refresh_function = undefined}, Acc) ->
-                Acc;
             (#app_metatable{table = _Table, refresh_function = #refresh_data{function_identifier = undefined}}, Acc) ->
                 Acc;
             (#app_metatable{table = Table, refresh_function = RefreshData}, Acc) ->
@@ -234,10 +232,7 @@ reset_cache_internal() ->
 
 
 %% @doc Add the refresh_function to the known set (if necessary)
--spec update_function_dict(table(), #refresh_data{} | undefined, any()) -> {ok, any()}.
-update_function_dict(Table, undefined, Functions) ->
-    remove_all_table_entries(Table),
-    {ok, Functions};
+-spec update_function_dict(table(), #refresh_data{}, any()) -> {ok, any()}.
 update_function_dict(Table, #refresh_data{function_identifier = undefined}, Functions) ->
     remove_all_table_entries(Table),
     {ok, Functions};
