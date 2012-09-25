@@ -305,7 +305,7 @@ init_metatable_internal(Nodes) ->
             create_metatable(Nodes)
     end.
 
--spec load_metatable_internal() -> ok | {aborted, Reason :: any()}.
+-spec load_metatable_internal() -> [#app_metatable{}].
 load_metatable_internal() ->
     {atomic, Data} = mnesia:transaction(fun() -> 
                     mnesia:match_object(#app_metatable{_ = '_'}) end),
