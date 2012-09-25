@@ -837,9 +837,8 @@ persist_data(#data_functions{persist_function = #persist_data{synchronous = fals
                                                               function_identifier
                                                               = FunctionIdentifier}}, TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
     write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
-    proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end);
-persist_data(_, _TransactionType, _OverwriteTimestamp, _Data, _ClearedTimestampData) ->
-    {error, ?INVALID_PERSIST_FUNCTION}.
+    _Pid = proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end),
+    ok.
 
 % This one presumes that there is only one record w/ the given key (i.e., not a
 % bag)
