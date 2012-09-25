@@ -1,6 +1,8 @@
 .eunit/*.beam
 .eunit/*.erl
+.eunit/*.html
 .eunit/log
+.eunit/cover.log
 deps/edown
 deps/gen_leader
 deps/gproc
