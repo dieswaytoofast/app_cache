@@ -8,3 +8,4 @@ deps/lager
 deps/timer2
 ebin/*.app
 ebin/*.beam
+log/console.log
