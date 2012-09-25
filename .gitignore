@@ -1,0 +1,10 @@
+.eunit/*.beam
+.eunit/*.erl
+.eunit/log
+deps/edown
+deps/gen_leader
+deps/gproc
+deps/lager
+deps/timer2
+ebin/*.app
+ebin/*.beam
