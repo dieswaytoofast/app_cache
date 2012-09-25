@@ -1334,9 +1334,7 @@ transform_data({function, Function}, Data) ->
 
 %% @doc Get the keys (first item in the tuple)
 %%      Note: duplicates are eliminated
--spec get_data_keys([tuple()] | undefined) -> [table_key()].
-get_data_keys(undefined) ->
-    [];
+-spec get_data_keys([tuple()]) -> [table_key()].
 get_data_keys(Data) ->
     lists:usort([element(1, Item) || Item <- Data]).
 
