@@ -1329,8 +1329,7 @@ transform_data(undefined, Data) -> Data;
 transform_data({module_and_function, {Module, Function}}, Data) -> 
     erlang:apply(Module, Function, [Data]);
 transform_data({function, Function}, Data) ->
-    Function(Data);
-transform_data(_Other, Data) -> Data.
+    Function(Data).
 
 
 %% @doc Get the keys (first item in the tuple)
