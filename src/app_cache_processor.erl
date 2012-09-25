@@ -1188,13 +1188,10 @@ get_ttl_and_field_index_internal(TableInfo) ->
     end.
 
 
--spec is_cache_valid(timestamp() | ?INFINITY, last_update() | ?DEFAULT_TIMESTAMP, timestamp()) -> boolean().
+-spec is_cache_valid(timestamp(), last_update() | ?DEFAULT_TIMESTAMP, timestamp()) -> boolean().
 is_cache_valid(_TableTTL, ?DEFAULT_TIMESTAMP, _CurrentTime) ->
     %% There is no timestamp, so the data is not valid
     false;
-is_cache_valid(?INFINITY, _LastUpdate, _CurrentTime) ->
-    %% The table has in infinite TTL
-    true;
 is_cache_valid(TableTTL, LastUpdate, CurrentTime) ->
     LastUpdate + TableTTL > CurrentTime.
 
