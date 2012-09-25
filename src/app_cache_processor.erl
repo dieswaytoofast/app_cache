@@ -390,7 +390,8 @@ create_table_internal(Table, Nodes, Tables) ->
                     last_update = current_time_in_gregorian_seconds(),
                     reason = create_table
                     }) end,
-    {atomic, ok} = mnesia:transaction(WriteFun).
+    {atomic, ok} = mnesia:transaction(WriteFun),
+    ok.
 
 %% @doc Update the TTL for the given table in the metatable
 update_table_time_to_live_internal(Table, TimeToLive) ->
@@ -463,7 +464,7 @@ update_table_persist_function(Table, PersistData) ->
 %%
 %%  These don't use  mnesia
 %%
--spec get_functions_internal(#app_metatable{}) -> function() | undefined.
+-spec get_functions_internal(undefined | #app_metatable{}) -> #data_functions{}.
 get_functions_internal(undefined) ->
     #data_functions{};
 get_functions_internal(TableInfo) ->
@@ -476,7 +477,7 @@ get_functions_internal(TableInfo) ->
                     refresh_function = RefreshFunction,
                     persist_function = PersistFunction}.
 
--spec set_read_transform_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_read_transform_function(table(), function_identifier(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_read_transform_function(Table, Function, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -485,7 +486,7 @@ set_read_transform_function(Table, Function, Tables) ->
             {{error, {?INVALID_TABLE, Table}}, Tables}
     end.
 
--spec set_write_transform_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_write_transform_function(table(), function_identifier(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_write_transform_function(Table, Function, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -495,7 +496,7 @@ set_write_transform_function(Table, Function, Tables) ->
     end.
 
 
--spec set_refresh_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_refresh_function(table(), #refresh_data{}, [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_refresh_function(Table, Function, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -505,7 +506,7 @@ set_refresh_function(Table, Function, Tables) ->
     end.
 
 
--spec set_persist_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_persist_function(table(), #persist_data{}, [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_persist_function(Table, PersistData, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -1322,7 +1323,7 @@ read_transform_data(#data_functions{read_transform_function = FunctionIdentifier
 
 %% @doc Apply a given function to the record. This should be transparent, i.e., the
 %%      output should be something recognizable as the same record
--spec transform_data(function() | undefined, any()) -> any().
+-spec transform_data(function_identifier() | undefined, any()) -> any().
 transform_data(undefined, Data) -> Data;
 transform_data({module_and_function, {Module, Function}}, Data) -> 
     erlang:apply(Module, Function, [Data]);
