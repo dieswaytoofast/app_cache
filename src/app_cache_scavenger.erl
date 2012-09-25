@@ -169,8 +169,8 @@ expired_entries(Table) ->
             mnesia:dirty_select(Table, [{MatchHead, Guard, Result}])
     end.
 
-%% @doc Deletes and recreates the timer for a given table in the timers list
--spec update_timers(table(), time_to_live(), list()) -> list().
+%% @doc Deletes and recreates the timer for a given table in the timers dict
+-spec update_timers(table(), time_to_live(), dict()) -> dict().
 update_timers(Table, TimeToLive, Timers) ->
     Timers1 = cancel_old_timer(Table, Timers),
     case get_new_timer(Table, TimeToLive) of
@@ -181,7 +181,7 @@ update_timers(Table, TimeToLive, Timers) ->
     end.
 
 %% @doc Removes a timer entry from the list of timers
--spec cancel_old_timer(table(), list()) -> list().
+-spec cancel_old_timer(table(), dict()) -> dict().
 cancel_old_timer(Table, Timers) ->
     case dict:find(Table, Timers) of
         {ok, {_TimeToLive, TimerRef}} ->
