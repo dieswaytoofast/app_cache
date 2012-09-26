@@ -197,6 +197,8 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_sequence_next_value()),
                  empty_all_tables(),
+                 ?debugVal(t_sequence_set_value()),
+                 empty_all_tables(),
                  ?debugVal(t_sequence_delete()),
                  empty_all_tables(),
                  ?debugVal(t_set_and_get_data_many()),
@@ -255,6 +257,12 @@ t_sequence_next_value() ->
                   lists:seq(1,10)),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     ?_assertEqual([#sequence_table{key =?KEY, value = 11}], MData).
+
+t_sequence_set_value() ->
+    ok = app_cache:sequence_create(?KEY, 1),
+    ok = app_cache:sequence_set_value(?KEY, 9999),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = 9999}], MData).
 
 t_sequence_delete() ->
     ok = app_cache:sequence_create(?KEY, 1),
