@@ -118,7 +118,8 @@ handle_call({delete, Key}, _From, State) ->
 
 handle_call({all_sequences}, _From, State) ->
     Dict = State#state.sequences,
-    {reply, dict:to_list(Dict), State};
+    All = dict:fold(fun(_, V, Acc) -> [V | Acc] end, [], Dict),
+    {reply, All, State};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
