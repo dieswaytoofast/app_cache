@@ -187,6 +187,8 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_cached_sequence_delete()),
                  empty_all_tables(),
+                 ?debugVal(t_cached_sequence_set_value()),
+                 empty_all_tables(),
                  ?debugVal(t_sequence_create()),
                  empty_all_tables(),
                  ?debugVal(t_sequence_current_value()),
@@ -305,6 +307,13 @@ t_cached_sequence_delete() ->
     app_cache:cached_sequence_delete(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     ?_assertEqual([], MData).
+
+t_cached_sequence_set_value() ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
+    ok = app_cache:cached_sequence_set_value(?KEY, 9999),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    Value = 9999 + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,
+    ?_assertEqual([#sequence_table{key =?KEY, value = Value}], MData).
 
 t_table_info() ->
     Data = app_cache:table_info(?TEST_TABLE_1),
