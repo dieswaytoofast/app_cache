@@ -25,12 +25,12 @@
 -define(setup(F), {setup, fun start/0, fun stop/1, F}).
 -define(foreach(F), {foreach, fun start/0, fun stop/1, F}).
 
-%%% Dummy data 
+%%% Dummy data
 -define(TEST_TABLE_1, test_table_1).
 -define(TEST_TABLE_2, test_table_2).
 -define(TABLE1, #app_metatable{
                 table = test_table_1,
-                version = 1, 
+                version = 1,
                 time_to_live = 60,
                 type = ordered_set,
                 fields = [key, timestamp, value, name],
@@ -38,7 +38,7 @@
             }).
 -define(TABLE2, #app_metatable{
                 table = test_table_2,
-                version = 1, 
+                version = 1,
                 time_to_live = 60,
                 type = bag,
                 fields = [key, timestamp, value, name],
@@ -46,7 +46,7 @@
             }).
 -define(TABLE3, #app_metatable{
                 table = test_table_3,
-                version = 1, 
+                version = 1,
                 time_to_live = infinity,
                 type = set,
                 fields = [key, value],
@@ -157,7 +157,7 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_get_first_entered_data_dirty()),
                  empty_all_tables(),
-                ?debugVal(t_get_first_n_entries()),
+                 ?debugVal(t_get_first_n_entries()),
                  empty_all_tables(),
                  ?debugVal(t_get_first_n_entries_dirty()),
                  empty_all_tables(),
@@ -365,50 +365,50 @@ t_set_data_with_transform_fun_dirty() ->
     ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
 
 t_set_data_with_sync_persist_fun1() ->
-    app_cache:set_persist_function(?TEST_TABLE_1, 
-                                   #persist_data{synchronous = true, 
+    app_cache:set_persist_function(?TEST_TABLE_1,
+                                   #persist_data{synchronous = true,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     ?_assertEqual(Data#test_table_1.value, ?VALUE4).
 
 t_set_data_with_sync_persist_fun1_dirty() ->
-    app_cache:set_persist_function(?TEST_TABLE_1, 
-                                   #persist_data{synchronous = true, 
+    app_cache:set_persist_function(?TEST_TABLE_1,
+                                   #persist_data{synchronous = true,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(dirty, ?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     ?_assertEqual(Data#test_table_1.value, ?VALUE4).
 
 t_set_data_with_async_persist_fun1() ->
-    app_cache:set_persist_function(?TEST_TABLE_1, 
-                                   #persist_data{synchronous = false, 
+    app_cache:set_persist_function(?TEST_TABLE_1,
+                                   #persist_data{synchronous = false,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     ?_assertEqual(Data#test_table_1.value, ?VALUE4).
 
 t_set_data_with_async_persist_fun1_dirty() ->
-    app_cache:set_persist_function(?TEST_TABLE_1, 
-                                   #persist_data{synchronous = false, 
+    app_cache:set_persist_function(?TEST_TABLE_1,
+                                   #persist_data{synchronous = false,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(dirty, ?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     ?_assertEqual(Data#test_table_1.value, ?VALUE4).
 
 t_set_data_with_sync_persist_fun2() ->
-    app_cache:set_persist_function(?TEST_TABLE_1, 
-                                   #persist_data{synchronous = true, 
-                                                 function_identifier = {function, 
+    app_cache:set_persist_function(?TEST_TABLE_1,
+                                   #persist_data{synchronous = true,
+                                                 function_identifier = {function,
                                                                         fun(_X) -> erlang:exit(bah) end}}),
     app_cache:set_data(?RECORD4),
     Result = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     ?_assertEqual(Result, []).
 
 t_set_data_with_sync_persist_fun2_dirty() ->
-    app_cache:set_persist_function(?TEST_TABLE_1, 
-                                   #persist_data{synchronous = true, 
-                                                 function_identifier = {function, 
+    app_cache:set_persist_function(?TEST_TABLE_1,
+                                   #persist_data{synchronous = true,
+                                                 function_identifier = {function,
                                                                         fun(_X) -> erlang:exit(bah) end}}),
     app_cache:set_data(dirty, ?RECORD4),
     Result = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
@@ -641,8 +641,8 @@ t_cache_expiration() ->
     ?_assertEqual(Data1, []).
 
 get_load_data_fun(Count) ->
-    fun() -> 
-            lists:map(fun(X) -> Record = #test_table_1{key = X, value = {X}}, app_cache:set_data(Record) end, lists:seq(1,Count)) 
+    fun() ->
+            lists:map(fun(X) -> Record = #test_table_1{key = X, value = {X}}, app_cache:set_data(Record) end, lists:seq(1,Count))
     end.
 
 empty_all_tables() ->
@@ -658,7 +658,6 @@ empty_table(Table) ->
             app_cache:set_refresh_function(Table, #refresh_data{}),
             [mnesia:delete({Table, Key}) || Key <- mnesia:all_keys(Table)] end,
     mnesia:transaction(DeleteFun).
-    
+
 transform_fun(Record) ->
     Record#test_table_1{value = 2 * Record#test_table_1.value}.
-
