@@ -506,7 +506,7 @@ cached_sequence_delete(Key) ->
 -spec sequence_all_sequences() -> [#sequence_cache{}].
 %% @equiv cached_sequence_all_sequences()
 sequence_all_sequences() ->
-    gen_server:call(?SEQUENCE_CACHE, {all_sequences}).
+    app_cache_processor:read_all_data(?TRANSACTION_TYPE_SAFE, ?SEQUENCE_TABLE).
 
 -spec cached_sequence_all_sequences() -> [#sequence_cache{}].
 %% @doc Returns the list of all the sequences known to app_cache
