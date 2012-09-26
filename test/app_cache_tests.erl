@@ -103,6 +103,10 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_delete_record_ignoring_timestamp_dirty()),
                  empty_all_tables(),
+                 ?debugVal(t_get_records()),
+                 empty_all_tables(),
+                 ?debugVal(t_get_records_dirty()),
+                 empty_all_tables(),
                  ?debugVal(t_table_info()),
                  empty_all_tables(),
                  ?debugVal(t_table_version()),
@@ -724,6 +728,28 @@ t_delete_record_ignoring_timestamp_dirty() ->
     app_cache:remove_record_ignoring_timestamp(dirty, ?RECORD30),
     Data = app_cache:get_data(?TEST_TABLE_2, ?KEY),
     ?_assertEqual({[], 2}, {Data, Len}).
+
+t_get_records() ->
+    ok = app_cache:set_data(?RECORD30),
+    %% timestamps have 1s resolution
+    receive
+    after 1050 ->
+            ok
+    end,
+    ok = app_cache:set_data(?RECORD30),
+    Len = length(app_cache:get_records(?RECORD30)),
+    ?_assertEqual(2, Len).
+
+t_get_records_dirty() ->
+    ok = app_cache:set_data(?RECORD30),
+    %% timestamps have 1s resolution
+    receive
+    after 1050 ->
+            ok
+    end,
+    ok = app_cache:set_data(?RECORD30),
+    Len = length(app_cache:get_records(dirty, ?RECORD30)),
+    ?_assertEqual(2, Len).
 
 t_set_and_get_data_many() ->
     LoadFun = get_load_data_fun(100),
