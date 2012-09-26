@@ -145,6 +145,8 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_get_bag_data_dirty()),
                  empty_all_tables(),
+                 ?debugVal(t_set_data_overwriting_timestamp()),
+                 empty_all_tables(),
                  ?debugVal(t_get_data_from_index()),
                  empty_all_tables(),
                  ?debugVal(t_get_data_from_index_dirty()),
@@ -570,6 +572,13 @@ t_get_bag_data_dirty() ->
     ok = app_cache:set_data(?RECORD31),
     Data = app_cache:get_data(dirty, ?TEST_TABLE_2, ?KEY),
     ?_assertEqual(2, length(Data)).
+
+t_set_data_overwriting_timestamp() ->
+    ok = app_cache:set_data(?RECORD30),
+    ok = app_cache:set_data_overwriting_timestamp(?RECORD30),
+    [Data] = app_cache:get_data(?TEST_TABLE_2, ?KEY),
+    ?_assertEqual({?KEY, ?VALUE, ?NAME},
+                  {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name}).
 
 t_get_data_from_index() ->
     ok = app_cache:set_data(?RECORD),
