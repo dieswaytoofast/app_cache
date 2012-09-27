@@ -248,18 +248,14 @@ handle_call({table_fields, Table}, _From, State) ->
 handle_call({update_table_time_to_live, Table, TTL}, _From, State) ->
     update_table_time_to_live_internal(Table, TTL),
     Tables = load_metatable_internal(),
-    {reply, Tables, State#state{tables = Tables}};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    {reply, Tables, State#state{tables = Tables}}.
 
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast(Msg, State) ->
+    {stop, {unhandled_cast, Msg}, State}.
 
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->

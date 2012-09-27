@@ -119,21 +119,14 @@ handle_call({delete, Key}, _From, State) ->
 handle_call({all_sequences}, _From, State) ->
     Dict = State#state.sequences,
     All = dict:fold(fun(_, V, Acc) -> [V | Acc] end, [], Dict),
-    {reply, All, State};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    {reply, All, State}.
 
 handle_cast({reset_cache}, _State) ->
     Dict = reset_cache_internal(),
-    {noreply, #state{sequences = Dict}};
+    {noreply, #state{sequences = Dict}}.
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->

@@ -140,11 +140,7 @@ handle_call({remove_key, Table, Key}, _From, #state{functions = Functions} = Sta
         false ->
             ok
     end,
-    {reply, Response, State};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    {reply, Response, State}.
 
 handle_cast({clear_table, Table}, #state{functions = Functions} = State) ->
     case dict:is_key(Table, Functions) of
@@ -189,10 +185,7 @@ handle_cast({reset_function, Table}, #state{functions = Functions} = State) ->
             remove_all_table_entries(Table),
             {{error, {invalid_table, Table}}, Functions}
     end, 
-    {noreply, State#state{functions = Functions1}};
-
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+    {noreply, State#state{functions = Functions1}}.
 
 %% @doc We use this to capture refresh_functon requests when the parameter is an
 %%      anonymous fun
@@ -200,9 +193,8 @@ handle_info({apply_refresh_function, FunctionIdentifier, Table, Key}, State) ->
         apply_refresh_function(FunctionIdentifier, Table, Key),
         {noreply, State};
 
-handle_info(_Info, State) ->
-    lager:debug("Info:~p~n", [_Info]),
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->

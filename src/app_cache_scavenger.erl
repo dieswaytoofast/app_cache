@@ -91,9 +91,8 @@ init([]) ->
 handle_call({get_timers}, _From, #state{timers = Timers} = State) ->
     {reply, Timers, State};
 
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+handle_call(Request, _From, State) ->
+    {stop, {unhandled_call, Request}, State}.
 
 handle_cast({reset_cache}, _State) ->
     Timers = reset_cache_internal(),
@@ -119,12 +118,12 @@ handle_cast({scavenge, Table}, #state{timers = Timers} = State) ->
     end,
     {noreply, State#state{timers = FinalTimers}};
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast(Msg, State) ->
+    {stop, {unhandled_cast, Msg}, State}.
 
 
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->
