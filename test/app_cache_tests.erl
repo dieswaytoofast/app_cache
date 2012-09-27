@@ -95,6 +95,10 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_set_data_with_refresh_fun5()),
                  empty_all_tables(),
+                 ?debugVal(t_set_refresh_function_bad()),
+                 empty_all_tables(),
+                 ?debugVal(t_set_persist_function_bad()),
+                 empty_all_tables(),
                  ?debugVal(t_delete_record()),
                  empty_all_tables(),
                  ?debugVal(t_delete_record_dirty()),
@@ -583,6 +587,16 @@ t_set_data_with_refresh_fun5() ->
     timer:sleep(1000),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     ?_assertEqual(Result, ?VALUE4*32).
+
+t_set_refresh_function_bad() ->
+    Res = app_cache:set_refresh_function(?TEST_TABLE_1, bad_function),
+    ?_assertEqual({error, {?INVALID_REFRESH_FUNCTION, {?TEST_TABLE_1, bad_function}}},
+                  Res).
+
+t_set_persist_function_bad() ->
+    Res = app_cache:set_persist_function(?TEST_TABLE_1, bad_function),
+    ?_assertEqual({error, {?INVALID_PERSIST_FUNCTION, {?TEST_TABLE_1, bad_function}}},
+                  Res).
 
 t_get_data() ->
     ok = app_cache:set_data(?RECORD),
