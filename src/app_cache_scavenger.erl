@@ -103,8 +103,8 @@ handle_cast({reset_timer, Table}, #state{timers = Timers} = State) ->
     {_Response, FinalTimers} = case mnesia:transaction(fun() -> mnesia:read(?METATABLE, Table) end) of
         {atomic, [#app_metatable{time_to_live = TimeToLive}]} ->
             {ok, update_timers(Table, TimeToLive, Timers)};
-        [] ->
-            {{error, {invalid_table, Table}}, Timers}
+        {aborted, Reason} ->
+            {{error, {invalid_table, Table, Reason}}, Timers}
     end, 
     {noreply, State#state{timers = FinalTimers}};
 

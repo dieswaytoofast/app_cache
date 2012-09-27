@@ -327,7 +327,7 @@ update_refresh_table(Type, RefreshData, Table, KeyList) ->
         end, KeyList).
 
 %% @doc If the key doesnt exist in the refresh table, add it
--spec update_key_in_refresh_table(#refresh_data{} | undefined, table(), table_key()) -> ok | error().
+-spec update_key_in_refresh_table(#refresh_data{} | undefined, table(), table_key()) -> ok | void.
 update_key_in_refresh_table(undefined, _Table, _Key) ->
     void;
 update_key_in_refresh_table(RefreshData, Table, Key) ->
@@ -347,7 +347,8 @@ update_key_in_refresh_table(RefreshData, Table, Key) ->
                     void
             end
     end,
-    mnesia:transaction(UpdateFun).
+    {atomic, Res} = mnesia:transaction(UpdateFun),
+    Res.
 
 %% @doc Return the TTL in seconds (or infinity!)
 -spec get_ttl_in_seconds(time_to_live()) -> time_to_live().
