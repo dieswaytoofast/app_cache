@@ -67,7 +67,7 @@ scavenge(Table) ->
 get_timers() ->
     gen_server:call(?SERVER, {get_timers}).
 
--spec reset_timer(table()) -> ok | error().
+-spec reset_timer(table()) -> ok.
 reset_timer(Table) ->
     gen_server:cast(?SERVER, {reset_timer, Table}).
 

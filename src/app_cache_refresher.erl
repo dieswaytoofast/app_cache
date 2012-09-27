@@ -75,11 +75,11 @@ refresh_data(async, Table, KeyList) ->
 refresh_data(sync, Table, KeyList) ->
     gen_server:call(?SERVER, {refresh_data, Table, KeyList}).
 
--spec remove_function(table()) -> ok | error().
+-spec remove_function(table()) -> ok.
 remove_function(Table) ->
     gen_server:cast(?SERVER, {remove_function, Table}).
 
--spec reset_function(table()) -> ok | error().
+-spec reset_function(table()) -> ok.
 reset_function(Table) ->
     gen_server:cast(?SERVER, {reset_function, Table}).
 
@@ -90,7 +90,7 @@ remove_key(Table, Key) ->
     gen_server:call(?SERVER, {remove_key, Table, Key}).
 
 %% @doc remove all the entries for this table
--spec clear_table(table()) -> ok | error().
+-spec clear_table(table()) -> ok.
 clear_table(Table) ->
     gen_server:cast(?SERVER, {clear_table, Table}).
 

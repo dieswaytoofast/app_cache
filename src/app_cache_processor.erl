@@ -272,7 +272,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec create_metatable([node()]) -> ok | {aborted, Reason :: any()}.
+-spec create_metatable([node()]) -> ok.
 create_metatable(Nodes) ->
     case mnesia:create_table(?METATABLE, [{access_mode, read_write},
                                                {record_name, ?METATABLE},
@@ -346,7 +346,7 @@ init_table_internal(Table, Nodes, Tables) ->
             create_table_internal(Table, Nodes, Tables)
     end.
 
--spec create_tables_internal([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec create_tables_internal([node()], [#app_metatable{}]) -> ok.
 create_tables_internal(Nodes, Tables) ->
     create_metatable(Nodes),
     lists:foreach(fun(#app_metatable{table = Table}) ->
@@ -355,7 +355,7 @@ create_tables_internal(Nodes, Tables) ->
 
 
 
--spec create_table_internal(table(), [node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec create_table_internal(table(), [node()], [#app_metatable{}]) -> ok.
 create_table_internal(Table, Nodes, Tables) ->
     #app_metatable{version = Version, 
                    time_to_live = TimeToLive, 
@@ -847,7 +847,7 @@ roll_back_write(TransactionType, _OverwriteTimestamp = true, Record) ->
 %%%
 
 %% Increments
--spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value()) -> ok | error().
+-spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value()) -> sequence_value() | error().
 increment_data(_TransactionType, Table, Key, Value) ->
     increment_data(Table, Key, Value).
 
@@ -1164,7 +1164,7 @@ cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
             {error, {Reason, MData}}
     end.
 
--spec get_ttl_and_field_index_internal(#app_metatable{}) -> time_to_live() | error().
+-spec get_ttl_and_field_index_internal(#app_metatable{}) -> {time_to_live(), table_key_position() | undefined} | error().
 get_ttl_and_field_index_internal(TableInfo) ->
     try
         #app_metatable{time_to_live = TTL, fields = Fields} = TableInfo,
@@ -1243,7 +1243,7 @@ update_tables_with_table_info(TableInfo, Tables) ->
     end.
 
 %% @doc If there is a timestamp field in this record, set it to the current time
--spec get_timestamped_data(undefined | table_key_position(), any()) -> any().
+-spec get_timestamped_data(undefined | table_key_position(), tuple()) -> tuple().
 get_timestamped_data(undefined, Data) ->
     Data;
 get_timestamped_data(TTLFieldIndex, Data) ->
@@ -1253,7 +1253,7 @@ get_timestamped_data(TTLFieldIndex, Data) ->
 
 %% @doc If there is a timestamp field in this record, and it is 'undefined', set
 %%      '_' (for use in a matchspec)
--spec clear_timestamp_if_unset(undefined | table_key_position(), any()) -> any().
+-spec clear_timestamp_if_unset(undefined | table_key_position(), tuple()) -> tuple().
 clear_timestamp_if_unset(undefined, Data) ->
     Data;
 clear_timestamp_if_unset(TTLFieldIndex, Data) ->
@@ -1265,7 +1265,7 @@ clear_timestamp_if_unset(TTLFieldIndex, Data) ->
     end.
 
 %% @doc If there is a timestamp field in this record,set it to '_' (for use in a matchspec)
--spec clear_timestamp_if_exists(any()) -> any().
+-spec clear_timestamp_if_exists(tuple()) -> tuple().
 clear_timestamp_if_exists(Record) ->
     Table = element(1, Record),
     TableInfo = table_info(Table),
@@ -1276,7 +1276,7 @@ clear_timestamp_if_exists(Record) ->
             clear_timestamp_if_exists(TTLFieldIndex, Record)
     end.
 
--spec clear_timestamp_if_exists(undefined | table_key_position(), any()) -> any().
+-spec clear_timestamp_if_exists(undefined | table_key_position(), tuple()) -> tuple().
 clear_timestamp_if_exists(undefined, Data) ->
     Data;
 clear_timestamp_if_exists(TTLFieldIndex, Data) ->

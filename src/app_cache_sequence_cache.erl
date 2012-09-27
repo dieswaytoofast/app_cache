@@ -168,7 +168,7 @@ get_sequence(Key, Dict) ->
             #sequence_cache{key = Key}
     end.
 
--spec initialize_cache(sequence_key(), sequence_value(), #state{}) -> any().
+-spec initialize_cache(sequence_key(), sequence_value(), #state{}) -> dict().
 initialize_cache(Key, Value, State) ->
     Dict = State#state.sequences,
     Sequence = get_sequence(Key, Dict),
@@ -176,7 +176,7 @@ initialize_cache(Key, Value, State) ->
     UpperBoundIncrement = Sequence#sequence_cache.upper_bound_increment,
     initialize_cache(Key, Value, Start, UpperBoundIncrement, State). 
 
--spec initialize_cache(sequence_key(), sequence_value(), sequence_value(), sequence_value(), #state{}) -> any().
+-spec initialize_cache(sequence_key(), sequence_value(), sequence_value(), sequence_value(), #state{}) -> dict().
 initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
     Dict = State#state.sequences,
     app_cache:set_data(#sequence_table{key = Key,
@@ -189,7 +189,7 @@ initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
                                     upper_bound = Value}, Dict).
         
 %% @doc return a Dict with all the data in the sequence table
--spec reset_cache_internal() -> any().
+-spec reset_cache_internal() -> dict().
 reset_cache_internal() ->
     app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
     Data = app_cache:get_all_data(?SEQUENCE_TABLE),

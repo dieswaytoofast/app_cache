@@ -88,12 +88,12 @@
 %%
 %% Mnesia utility functions
 %%
--spec setup() -> {atomic, ok} | {error, Reason::any()}.
+-spec setup() -> ok | {error, Reason::any()}.
 %% @equiv setup([node()])
 setup() ->
     setup([node()]).
 
--spec setup([node()]) -> {atomic, ok} | {error, Reason::any()}.
+-spec setup([node()]) -> ok | {error, Reason::any()}.
 %% @doc Does the necessary housekeeping on these nodes to run Disc Nodes
 setup(Nodes) when is_list(Nodes) ->
     mnesia:create_schema(Nodes).
@@ -111,7 +111,7 @@ init_metatable(Nodes) ->
 get_metatable() ->
     gen_server:call(?PROCESSOR, {get_metatable}).
 
--spec cache_init([#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec cache_init([#app_metatable{}]) -> ok | error().
 cache_init(Tables) ->
     Nodes = get_env(cache_nodes, [node()]),
     cache_init(Nodes, Tables).
@@ -135,7 +135,7 @@ create_metatable() ->
     Nodes = get_env(cache_nodes, [node()]),
     create_metatable(Nodes).
 
--spec create_metatable([node()]) -> ok | {aborted, Reason :: any()}.
+-spec create_metatable([node()]) -> ok.
 create_metatable(Nodes) ->
     app_cache_processor:create_metatable(Nodes).
 
@@ -340,24 +340,24 @@ get_all_data(TransactionType, Table) ->
     app_cache_processor:read_all_data(TransactionType, Table).
 
 %% Write the record
--spec set_data(Value::any()) -> ok | error().
+-spec set_data(Value::tuple()) -> ok | error().
 %% @equiv set_data(safe, Value)
 set_data(Value) ->
     set_data(?TRANSACTION_TYPE_SAFE, Value).
 
--spec set_data(transaction_type(), Value::any()) -> ok | error().
+-spec set_data(transaction_type(), Value::tuple()) -> ok | error().
 %% @doc Write the record "Value" to the table 
 %%      <p>The table name is element(1, Value)</p>
 %% @end
 set_data(TransactionType, Value) ->
     app_cache_processor:write_data(TransactionType, Value).
 
--spec set_data_overwriting_timestamp(Value::any()) -> ok | error().
+-spec set_data_overwriting_timestamp(Value::tuple()) -> ok | error().
 %% @equiv set_data_overwriting_timestamp(safe, Value)
 set_data_overwriting_timestamp(Value) ->
     set_data_overwriting_timestamp(?TRANSACTION_TYPE_SAFE, Value).
 
--spec set_data_overwriting_timestamp(transaction_type(), Value::any()) -> ok | error().
+-spec set_data_overwriting_timestamp(transaction_type(), Value::tuple()) -> ok | error().
 %% @doc If your table is a <i>bag</i> and contains a <i>timestamp</i> field, 
 %%      but you actually don't care about the timestamp in your
 %%      records, then <i>set_data</i> will create new records each time you write.
