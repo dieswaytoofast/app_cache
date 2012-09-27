@@ -227,6 +227,25 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_cache_expiration())] end}.
 
+app_cache_init_table_test_() ->
+    {setup,
+     fun start_with_schema/0,
+     fun stop/1,
+     fun(_) ->
+             [
+              ?debugVal(t_init_metatable()),
+              empty_all_tables(),
+              ?debugVal(t_get_metatable()),
+              empty_all_tables(),
+              ?debugVal(t_init_metatable_nodes()),
+              empty_all_tables(),
+              ?debugVal(t_init_table()),
+              empty_all_tables(),
+              ?debugVal(t_init_table_nodes()),
+              empty_all_tables()] end}.
+
+
+
 %%
 %% Setup Functions
 %%
@@ -242,6 +261,10 @@ stop(_) ->
     app_cache:stop(),
     mnesia:delete_schema([node()]).
 
+start_with_schema() ->
+    start(),
+    app_cache:stop(),
+    app_cache:start().
 
 
 
@@ -766,6 +789,28 @@ t_cache_expiration() ->
     timer:sleep(10000),
     Data1 = app_cache:get_after(?TEST_TABLE_1, 0),
     ?_assertEqual(Data1, []).
+
+t_init_table() ->
+    Res = app_cache:init_table(?TEST_TABLE_1),
+    ?_assertEqual(ok, Res).
+
+t_init_table_nodes() ->
+    Res = app_cache:init_table(?TEST_TABLE_2, [node()]),
+    ?_assertEqual(ok, Res).
+
+t_init_metatable() ->
+    Res = app_cache:init_metatable(),
+    ?_assertEqual(ok, Res).
+
+t_init_metatable_nodes() ->
+    Res = app_cache:init_metatable([node()]),
+    ?_assertEqual(ok, Res).
+
+t_get_metatable() ->
+    Res = app_cache:get_metatable(),
+    Metatables = [M || M = #app_metatable{} <- Res],
+    ?_assert(length(Metatables) > 0).
+
 
 get_load_data_fun(Count) ->
     fun() ->
