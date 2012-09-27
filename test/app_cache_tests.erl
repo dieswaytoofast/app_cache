@@ -189,6 +189,8 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_cached_sequence_create()),
                  empty_all_tables(),
+                 ?debugVal(t_cached_sequence_create_default()),
+                 empty_all_tables(),
                  ?debugVal(t_cached_sequence_current_value()),
                  empty_all_tables(),
                  ?debugVal(t_cached_sequence_current_value_0()),
@@ -206,6 +208,8 @@ app_cache_test_() ->
                  ?debugVal(t_cached_sequence_all_sequences_one()),
                  empty_all_tables(),
                  ?debugVal(t_sequence_create()),
+                 empty_all_tables(),
+                 ?debugVal(t_sequence_create_default()),
                  empty_all_tables(),
                  ?debugVal(t_sequence_current_value()),
                  empty_all_tables(),
@@ -278,6 +282,13 @@ t_sequence_create() ->
     app_cache:sequence_delete(?KEY),
     ?_assertEqual([#sequence_table{key =?KEY, value = 1}], MData).
 
+t_sequence_create_default() ->
+    Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
+    ok = app_cache:sequence_create(?KEY),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    app_cache:sequence_delete(?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = Start}], MData).
+
 t_sequence_current_value() ->
     ok = app_cache:sequence_create(?KEY, 1),
     lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
@@ -338,7 +349,15 @@ t_cached_sequence_create() ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 1 +?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}], MData).
+    ?_assertEqual([#sequence_table{key =?KEY, value = 1 + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}], MData).
+
+t_cached_sequence_create_default() ->
+    Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
+    ok = app_cache:cached_sequence_create(?KEY),
+    MData = mnesia:dirty_read(sequence_table, ?KEY),
+    app_cache:cached_sequence_delete(?KEY),
+    ?_assertEqual([#sequence_table{key =?KEY, value = Start + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}], MData).
+
 
 t_cached_sequence_current_value_0() ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
