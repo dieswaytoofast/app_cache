@@ -136,7 +136,7 @@ table_info(Table) ->
 init([Nodes]) ->
     process_flag(trap_exit, true),
     try
-        init_metatable_internal(Nodes),
+        ok = init_metatable_internal(Nodes),
         Tables = load_metatable_internal(),
         {ok, #state{tables = Tables}}
     catch
@@ -742,13 +742,13 @@ refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     before_each_read = false,
                     after_each_read = false}} = TableInfo, Keys) -> 
-    app_cache_refresher:refresh_data(async, TableInfo#app_metatable.table, Keys),
+    ok = app_cache_refresher:refresh_data(async, TableInfo#app_metatable.table, Keys),
     false;
 refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     before_each_read = true,
                     after_each_read = false}} = TableInfo, Keys) -> 
-    app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
+    ok = app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
     true;
 % WARNING: HERE BE RACE CONDITIONS
 %           You could, theoretically, have the "after_read" happen before the
@@ -764,7 +764,7 @@ refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     before_each_read = true,
                     after_each_read = true}} = TableInfo, Keys) -> 
-    app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
+    ok = app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
     proc_lib:spawn_link(fun() -> app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys) end),
     true.
 
@@ -825,7 +825,7 @@ persist_data(#data_functions{persist_function =
 persist_data(#data_functions{persist_function = #persist_data{synchronous = false, 
                                                               function_identifier
                                                               = FunctionIdentifier}}, TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
-    write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
+    ok = write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
     _Pid = proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end),
     ok.
 

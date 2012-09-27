@@ -125,7 +125,7 @@ init([]) ->
 handle_call({refresh_data, Table, KeyList}, _From, State) ->
     case dict:find(Table, State#state.functions) of
         {ok, RefreshData} -> 
-            update_refresh_table(sync, RefreshData, Table, KeyList);
+            ok = update_refresh_table(sync, RefreshData, Table, KeyList);
         error ->
             Error = {{error, {invalid_table, Table}}, State#state.functions},
             lager:error("Error:~p~n", [Error])
@@ -136,7 +136,7 @@ handle_call({remove_key, Table, Key}, _From, #state{functions = Functions} = Sta
     Response = 
     case dict:is_key(Table, Functions) of
         true ->
-            remove_entry_from_table(Table, Key);
+            ok = remove_entry_from_table(Table, Key);
         false ->
             ok
     end,
@@ -165,7 +165,7 @@ handle_cast({remove_function, Table}, #state{functions = Functions} = State) ->
 handle_cast({refresh_data, Table, KeyList}, State) ->
     case dict:find(Table, State#state.functions) of
         {ok, RefreshData} -> 
-            update_refresh_table(async, RefreshData, Table, KeyList);
+            ok = update_refresh_table(async, RefreshData, Table, KeyList);
         error ->
             Error = {{error, {invalid_table, Table}}, State#state.functions},
             lager:error("Error:~p~n", [Error])
@@ -174,7 +174,7 @@ handle_cast({refresh_data, Table, KeyList}, State) ->
 
 handle_cast({reset_cache}, _State) ->
     Functions = reset_cache_internal(),
-    reset_table_entries(Functions),
+    ok = reset_table_entries(Functions),
     {noreply, #state{functions = Functions}};
 
 handle_cast({reset_function, Table}, #state{functions = Functions} = State) ->
@@ -190,8 +190,8 @@ handle_cast({reset_function, Table}, #state{functions = Functions} = State) ->
 %% @doc We use this to capture refresh_functon requests when the parameter is an
 %%      anonymous fun
 handle_info({apply_refresh_function, FunctionIdentifier, Table, Key}, State) ->
-        apply_refresh_function(FunctionIdentifier, Table, Key),
-        {noreply, State};
+    apply_refresh_function(FunctionIdentifier, Table, Key),
+    {noreply, State};
 
 handle_info(Info, State) ->
     {stop, {unhandled_info, Info}, State}.

@@ -191,13 +191,10 @@ cancel_old_timer(Table, Timers) ->
     end.
 
 %% @doc Create timers to activate the scavenger for the table
--spec get_new_timer(Table::table(), TimeToLive::time_to_live()) -> any().
+-spec get_new_timer(Table::table(), TimeToLive::time_to_live()) ->
+                           undefined | {table(), {time_to_live(), reference()}}.
+get_new_timer(_Table, ?INFINITY) ->
+    undefined;
 get_new_timer(Table, TimeToLive) ->
-    case TimeToLive of
-        ?INFINITY ->
-            undefined;
-        _ ->
-            {ok, TimerRef} = timer:apply_interval(TimeToLive * ?SCAVENGE_FACTOR, ?SERVER, scavenge, [Table]),
-            {Table, {TimeToLive, TimerRef}}
-    end.
-
+    {ok, TimerRef} = timer:apply_interval(TimeToLive * ?SCAVENGE_FACTOR, ?SERVER, scavenge, [Table]),
+    {Table, {TimeToLive, TimerRef}}.
