@@ -252,6 +252,8 @@ app_cache_init_table_test_() ->
               ?debugVal(t_init_table_nodes()),
               empty_all_tables()] end}.
 
+app_cache_last_update_to_datetime_test() ->
+    ?assertEqual({{0,1,1},{0,0,0}}, app_cache:last_update_to_datetime(0)).
 
 
 %%
