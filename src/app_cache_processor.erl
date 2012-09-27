@@ -371,7 +371,7 @@ create_table_internal(Table, Nodes, Tables) ->
                                         {type, Type},
                                         {local_content, true}]),
     % Add secondary indexes
-    lists:map(fun(Field) ->
+    lists:foreach(fun(Field) ->
                 {atomic, ok} = mnesia:add_table_index(Table, Field)
         end, get_index_fields(TimeToLive, IndexFields)),
 
