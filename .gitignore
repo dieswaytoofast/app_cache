@@ -3,6 +3,7 @@
 .eunit/*.html
 .eunit/log
 .eunit/cover.log
+.eunit/*.xml
 deps/edown
 deps/gen_leader
 deps/gproc
