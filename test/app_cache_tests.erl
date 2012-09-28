@@ -15,6 +15,7 @@
 %% ------------------------------------------------------------------
 
 -include("../src/defaults.hrl").
+-include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 
@@ -24,6 +25,7 @@
 
 -define(setup(F), {setup, fun start/0, fun stop/1, F}).
 -define(foreach(F), {foreach, fun start/0, fun stop/1, F}).
+-define(PROPTEST(A), ?_assert(proper:quickcheck(A()))).
 
 %%% Dummy data
 -define(TEST_TABLE_1, test_table_1).
@@ -211,11 +213,11 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_cached_sequence_all_sequences_one()),
                  empty_all_tables(),
-                 ?debugVal(t_sequence_create()),
+                 ?debugVal(?PROPTEST(prop_sequence_create)),
                  empty_all_tables(),
                  ?debugVal(t_sequence_create_default()),
                  empty_all_tables(),
-                 ?debugVal(t_sequence_current_value()),
+                 ?debugVal(?PROPTEST(prop_sequence_current_value)),
                  empty_all_tables(),
                  ?debugVal(t_sequence_current_value_0()),
                  empty_all_tables(),
@@ -282,11 +284,14 @@ start_with_schema() ->
 %% Helper Functions
 %%
 
-t_sequence_create() ->
-    ok = app_cache:sequence_create(?KEY, 1),
-    MData = mnesia:dirty_read(sequence_table, ?KEY),
-    app_cache:sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 1}], MData).
+prop_sequence_create() ->
+    ?FORALL({Key, Start}, {any(), sequence_value()},
+            begin
+                ok = app_cache:sequence_create(Key, Start),
+                MData = mnesia:dirty_read(sequence_table, Key),
+                app_cache:sequence_delete(Key),
+                [#sequence_table{key =Key, value = Start}] =:= MData
+            end).
 
 t_sequence_create_default() ->
     Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
@@ -295,13 +300,16 @@ t_sequence_create_default() ->
     app_cache:sequence_delete(?KEY),
     ?_assertEqual([#sequence_table{key =?KEY, value = Start}], MData).
 
-t_sequence_current_value() ->
-    ok = app_cache:sequence_create(?KEY, 1),
-    lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
-                  lists:seq(1,10)),
-    Value = app_cache:sequence_current_value(?KEY),
-    app_cache:sequence_delete(?KEY),
-    ?_assertEqual(11, Value).
+prop_sequence_current_value() ->
+    ?FORALL({Key, Start, Num}, {any(), sequence_value(), integer(0, 500)},
+            begin
+                ok = app_cache:sequence_create(Key, Start),
+                lists:foreach(fun(_X) -> app_cache:sequence_next_value(Key) end,
+                              lists:seq(1, Num)),
+                Value = app_cache:sequence_current_value(Key),
+                app_cache:sequence_delete(Key),
+                (Start + Num) =:= Value
+            end).
 
 t_sequence_current_value_0() ->
     ok = app_cache:sequence_create(?KEY, 1),

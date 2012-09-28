@@ -8,6 +8,7 @@ deps/gen_leader
 deps/gproc
 deps/lager
 deps/timer2
+deps/proper
 ebin/*.app
 ebin/*.beam
 log/*.log
