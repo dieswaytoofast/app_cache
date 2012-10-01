@@ -49,8 +49,8 @@ precondition(_State, {call, app_cache, sequence_create, [_Key, _Start]}) ->
     true;
 precondition(#state{keys=Keys}, {call, app_cache, sequence_set_value, [Key, _Start]}) ->
     sets:is_element(Key, Keys);
-precondition(#state{keys=Keys}, {call, app_cache, sequence_current_value, [Key]}) ->
-    sets:is_element(Key, Keys);
+precondition(_State, {call, app_cache, sequence_current_value, [_Key]}) ->
+    true;
 precondition(#state{keys=Keys}, {call, app_cache, sequence_next_value, [Key]}) ->
     sets:is_element(Key, Keys);
 precondition(#state{keys=Keys}, {call, app_cache, sequence_next_value, [Key, _Increment]}) ->
@@ -64,8 +64,13 @@ postcondition(_State, {call, app_cache, sequence_create, [_Key, _Start]}, Res) -
     Res =:= ok;
 postcondition(_State, {call, app_cache, sequence_set_value, [_Key, _Start]}, Res) ->
     Res =:= ok;
-postcondition(#state{seqs=Seqs}, {call, app_cache, sequence_current_value, [Key]}, Value) ->
-    Value =:= dict:fetch(Key, Seqs);
+postcondition(#state{keys=Keys, seqs=Seqs}, {call, app_cache, sequence_current_value, [Key]}, Value) ->
+    case sets:is_element(Key, Keys) of
+        true ->
+            Value =:= dict:fetch(Key, Seqs);
+        false ->
+            Value =:= ?DEFAULT_CACHE_START
+    end;
 postcondition(#state{seqs=Seqs}, {call, app_cache, sequence_next_value, [Key]}, Value) ->
     Value =:= (dict:fetch(Key, Seqs) + 1);
 postcondition(#state{seqs=Seqs}, {call, app_cache, sequence_next_value, [Key, Increment]}, Value) ->
