@@ -26,6 +26,7 @@
 -define(setup(F), {setup, fun start/0, fun stop/1, F}).
 -define(foreach(F), {foreach, fun start/0, fun stop/1, F}).
 -define(PROPTEST(A), ?_assert(proper:quickcheck(A()))).
+-define(PROPTEST(M,F), ?_assert(proper:quickcheck(M:F()))).
 
 %%% Dummy data
 -define(TEST_TABLE_1, test_table_1).
@@ -235,7 +236,9 @@ app_cache_test_() ->
                  empty_all_tables(),
                  ?debugVal(t_set_and_get_data_many()),
                  empty_all_tables(),
-                 ?debugVal(t_cache_expiration())] end}.
+                 ?debugVal(t_cache_expiration()),
+                 empty_all_tables(),
+                 ?debugVal(?PROPTEST(app_cache_sequence_proper, prop_sequence))] end}.
 
 app_cache_init_table_test_() ->
     {setup,
