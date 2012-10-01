@@ -71,9 +71,7 @@ postcondition(#state{seqs=Seqs}, {call, app_cache, sequence_next_value, [Key]}, 
 postcondition(#state{seqs=Seqs}, {call, app_cache, sequence_next_value, [Key, Increment]}, Value) ->
     Value =:= (dict:fetch(Key, Seqs) + Increment);
 postcondition(#state{seqs=Seqs}, {call, app_cache, sequence_delete, [Key]}, Res) ->
-    Res =:= ok andalso dict:find(Key, Seqs) =/= false;
-postcondition(_, _, _) ->
-    false.
+    Res =:= ok andalso dict:find(Key, Seqs) =/= false.
 
 prop_sequence() ->
     ?FORALL(Cmds, commands(?MODULE),
