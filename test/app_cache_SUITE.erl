@@ -83,6 +83,8 @@ end_per_group(_GroupName, _Config) ->
 init_per_testcase(_TestCase, Config) ->
     Config.
 
+end_per_testcase(sequence, _Config) ->
+    app_cache:sequence_delete(?KEY);
 end_per_testcase(_TestCase, _Config) ->
     empty_all_tables().
 
@@ -200,7 +202,6 @@ t_sequence_create_default(_) ->
     Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
     ok = app_cache:sequence_create(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
-    app_cache:sequence_delete(?KEY),
     [#sequence_table{key =?KEY, value = Start}] =:= MData.
 
 t_prop_sequence_current_value(_) ->
@@ -220,7 +221,6 @@ prop_sequence_current_value() ->
 t_sequence_current_value_0(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     Value = app_cache:sequence_current_value(?KEY),
-    app_cache:sequence_delete(?KEY),
     1 = Value.
 
 t_sequence_current_value_1(_) ->
@@ -230,7 +230,6 @@ t_sequence_current_value_1(_) ->
     Value = app_cache:sequence_current_value(?KEY),
     % 'cos the first 'next_value' is the 'set-value'
     ok = app_cache:sequence_create(?KEY, 1),
-    app_cache:sequence_delete(?KEY),
     11 = Value.
 
 t_sequence_next_value(_) ->
@@ -238,21 +237,18 @@ t_sequence_next_value(_) ->
     lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
                   lists:seq(1,10)),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
-    app_cache:sequence_delete(?KEY),
     [#sequence_table{key =?KEY, value = 11}] = MData.
 
 t_sequence_set_value(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     ok = app_cache:sequence_set_value(?KEY, 9999),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
-    app_cache:sequence_delete(?KEY),
     [#sequence_table{key =?KEY, value = 9999}] = MData.
 
 t_sequence_delete(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     app_cache:sequence_delete(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
-    app_cache:sequence_delete(?KEY),
     [] = MData.
 
 t_sequence_all_sequences(_) ->
@@ -261,7 +257,6 @@ t_sequence_all_sequences(_) ->
 t_sequence_all_sequences_one(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     All = app_cache:sequence_all_sequences(),
-    app_cache:sequence_delete(?KEY),
     [#sequence_table{key =?KEY, value = 1}] = All.
 
 t_cached_sequence_create(_) ->
@@ -288,7 +283,6 @@ t_cached_sequence_current_value(_) ->
     lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
                   lists:seq(1,20)),
     Value = app_cache:cached_sequence_current_value(?KEY),
-    app_cache:sequence_delete(?KEY),
     21 = Value.
 
 t_cached_sequence_current_value_1(_) ->
