@@ -1,5 +1,9 @@
 -module(app_cache_SUITE).
 
+-author('Juan Jose Comellas <juanjo@comellas.org>').
+-author('Mahesh Paolini-Subramanya <mahesh@dieswaytoofast.com>').
+-author('Paul Oliver <puzza007@gmail.com>').
+
 %% Note: This directive should only be used in test suites.
 -compile(export_all).
 
