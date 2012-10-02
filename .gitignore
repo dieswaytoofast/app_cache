@@ -1,3 +1,4 @@
+erl_crash.dump
 .eunit/*.beam
 .eunit/*.erl
 .eunit/*.html
@@ -9,6 +10,7 @@ deps/gen_leader
 deps/gproc
 deps/lager
 deps/timer2
+deps/proper
 ebin/*.app
 ebin/*.beam
 log/*.log
