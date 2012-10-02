@@ -1,32 +1,18 @@
-%%%-------------------------------------------------------------------
-%%% @author Juan Jose Comellas <juanjo@comellas.org>
-%%% @author Mahesh Paolini-Subramanya <mahesh@dieswaytoofast.com>
-%%% @copyright (C) 2011-2012 Juan Jose Comellas, Mahesh Paolini-Subramanya
-%%% @doc Main module for the timer2 application.
-%%% @end
-%%%-------------------------------------------------------------------
--module(app_cache_tests).
+-module(app_cache_SUITE).
 
--author('Juan Jose Comellas <juanjo@comellas.org>').
--author('Mahesh Paolini-Subramanya <mahesh@dieswaytoofast.com>').
-
-%% ------------------------------------------------------------------
-%% Includes
-%% ------------------------------------------------------------------
+%% Note: This directive should only be used in test suites.
+-compile(export_all).
 
 -include("../src/defaults.hrl").
 -include_lib("proper/include/proper.hrl").
--include_lib("eunit/include/eunit.hrl").
-
+-include_lib("common_test/include/ct.hrl").
 
 %% ------------------------------------------------------------------
 %% Defines
 %% ------------------------------------------------------------------
 
--define(setup(F), {setup, fun start/0, fun stop/1, F}).
--define(foreach(F), {foreach, fun start/0, fun stop/1, F}).
--define(PROPTEST(A), ?_assert(proper:quickcheck(A()))).
--define(PROPTEST(M,F), ?_assert(proper:quickcheck(M:F()))).
+-define(PROPTEST(A), proper:quickcheck(A())).
+-define(PROPTEST(M,F), proper:quickcheck(M:F())).
 
 %%% Dummy data
 -define(TEST_TABLE_1, test_table_1).
@@ -74,218 +60,132 @@
 -define(RECORD31, {test_table_2, ?KEY, undefined, ?VALUE2, ?NAME2}).
 -define(RECORD4, {test_table_1, ?KEY4, undefined, ?VALUE4, ?NAME4}).
 
-%% ------------------------------------------------------------------
-%% Test Function Definitions
-%% ------------------------------------------------------------------
+suite() ->
+    [{timetrap,{minutes,1}}].
 
-%%
-%% Test Descriptions
-%%
+init_per_suite(Config) ->
+    Config.
 
-app_cache_test_() ->
-    {setup,
-     fun start/0,
-     fun stop/1,
-     fun(_) ->
-                [
-                 ?debugVal(t_set_data_with_refresh_fun1()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_refresh_fun2()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_refresh_fun3()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_refresh_fun4()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_refresh_fun5()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_refresh_function_bad()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_persist_function_bad()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_record()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_record_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_record_ignoring_timestamp()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_record_ignoring_timestamp_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_records()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_records_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_table_info()),
-                 empty_all_tables(),
-                 ?debugVal(t_table_version()),
-                 empty_all_tables(),
-                 ?debugVal(t_table_time_to_live()),
-                 empty_all_tables(),
-                 ?debugVal(t_table_fields()),
-                 empty_all_tables(),
-                 ?debugVal(t_cache_time_to_live()),
-                 empty_all_tables(),
-                 ?debugVal(t_ttl_and_field_index()),
-                 empty_all_tables(),
-                 ?debugVal(t_update_time_to_live()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_async_persist_fun1()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_async_persist_fun1_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_sync_persist_fun1()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_sync_persist_fun1_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_sync_persist_fun2()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_sync_persist_fun2_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_transform_fun()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_with_transform_fun_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_data_with_transform_fun()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_data_with_transform_fun_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_data_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_bag_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_bag_data_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_overwriting_timestamp()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_data_overwriting_timestamp_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_data_from_index()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_data_from_index_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_last_entered_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_last_entered_data_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_first_entered_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_first_entered_data_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_first_n_entries()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_first_n_entries_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_last_n_entries()),
-                 empty_all_tables(),
-                 ?debugVal(t_get_last_n_entries_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_key_exists()),
-                 empty_all_tables(),
-                 ?debugVal(t_key_exists_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_data_dirty()),
-                 empty_all_tables(),
-                 ?debugVal(t_delete_all_data()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_create()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_create_default()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_current_value()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_current_value_0()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_current_value_1()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_next_value()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_delete()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_set_value()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_all_sequences()),
-                 empty_all_tables(),
-                 ?debugVal(t_cached_sequence_all_sequences_one()),
-                 empty_all_tables(),
-                 ?debugVal(?PROPTEST(prop_sequence_create)),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_create_default()),
-                 empty_all_tables(),
-                 ?debugVal(?PROPTEST(prop_sequence_current_value)),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_current_value_0()),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_current_value_1()),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_next_value()),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_set_value()),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_delete()),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_all_sequences()),
-                 empty_all_tables(),
-                 ?debugVal(t_sequence_all_sequences_one()),
-                 empty_all_tables(),
-                 ?debugVal(t_set_and_get_data_many()),
-                 empty_all_tables(),
-                 ?debugVal(t_cache_expiration()),
-                 empty_all_tables(),
-                 ?debugVal(?PROPTEST(app_cache_sequence_proper, prop_sequence))] end}.
+end_per_suite(_Config) ->
+    ok.
 
-app_cache_init_table_test_() ->
-    {setup,
-     fun start_with_schema/0,
-     fun stop/1,
-     fun(_) ->
-             [
-              ?debugVal(t_init_metatable()),
-              empty_all_tables(),
-              ?debugVal(t_get_metatable()),
-              empty_all_tables(),
-              ?debugVal(t_init_metatable_nodes()),
-              empty_all_tables(),
-              ?debugVal(t_init_table()),
-              empty_all_tables(),
-              ?debugVal(t_init_table_nodes()),
-              empty_all_tables()] end}.
-
-app_cache_last_update_to_datetime_test() ->
-    ?assertEqual({{0,1,1},{0,0,0}}, app_cache:last_update_to_datetime(0)).
-
-
-%%
-%% Setup Functions
-%%
-start() ->
-    app_cache:setup(),
-    app_cache:start(),
-    app_cache:create_table(?TABLE1),
-    app_cache:create_table(?TABLE2),
-    app_cache:create_table(?TABLE3).
-
-
-stop(_) ->
-    app_cache:stop(),
-    mnesia:delete_schema([node()]).
-
-start_with_schema() ->
+init_per_group(start_with_schema, Config) ->
+    start_with_schema(),
+    Config;
+init_per_group(_, Config) ->
     start(),
-    app_cache:stop(),
-    app_cache:start().
+    Config.
 
+end_per_group(_GroupName, _Config) ->
+    stop(),
+    ok.
 
+init_per_testcase(_TestCase, Config) ->
+    Config.
 
-%%
-%% Helper Functions
-%%
+end_per_testcase(_TestCase, _Config) ->
+    empty_all_tables().
+
+groups() ->
+    [{sequence, [],
+      [t_prop_sequence_create,
+       t_sequence_create_default,
+       t_prop_sequence_current_value,
+       t_sequence_current_value_0,
+       t_sequence_current_value_1,
+       t_sequence_next_value,
+       t_sequence_set_value,
+       t_sequence_delete,
+       t_sequence_all_sequences,
+       t_sequence_all_sequences_one,
+       t_cached_sequence_create,
+       t_cached_sequence_create_default,
+       t_cached_sequence_current_value_0,
+       t_cached_sequence_current_value,
+       t_cached_sequence_current_value_1,
+       t_cached_sequence_next_value,
+       t_cached_sequence_delete,
+       t_cached_sequence_set_value,
+       t_cached_sequence_all_sequences,
+       t_cached_sequence_all_sequences_one
+      ]},
+
+    {start_with_schema, [],
+     [t_init_table,
+      t_init_table_nodes,
+      t_init_metatable,
+      t_init_metatable_nodes,
+      t_get_metatable]},
+
+    {crud, [],
+     [t_table_info,
+      t_table_version,
+      t_table_time_to_live,
+      t_table_fields,
+      t_cache_time_to_live,
+      t_ttl_and_field_index,
+      t_update_time_to_live,
+      t_set_data,
+      t_set_data_dirty,
+      t_set_data_with_transform_fun,
+      t_set_data_with_transform_fun_dirty,
+      t_set_data_with_sync_persist_fun1,
+      t_set_data_with_sync_persist_fun1_dirty,
+      t_set_data_with_async_persist_fun1,
+      t_set_data_with_async_persist_fun1_dirty,
+      t_set_data_with_sync_persist_fun2,
+      t_set_data_with_sync_persist_fun2_dirty,
+      t_set_data_with_refresh_fun1,
+      t_set_data_with_refresh_fun2,
+      t_set_data_with_refresh_fun3,
+      t_set_data_with_refresh_fun4,
+      t_set_data_with_refresh_fun5,
+      t_set_refresh_function_bad,
+      t_set_persist_function_bad,
+      t_get_data,
+      t_get_data_dirty,
+      t_get_data_with_transform_fun,
+      t_get_data_with_transform_fun_dirty,
+      t_get_bag_data,
+      t_get_bag_data_dirty,
+      t_set_data_overwriting_timestamp,
+      t_set_data_overwriting_timestamp_dirty,
+      t_get_data_from_index,
+      t_get_data_from_index_dirty,
+      t_get_last_entered_data,
+      t_get_last_entered_data_dirty,
+      t_get_first_entered_data,
+      t_get_first_entered_data_dirty,
+      t_get_last_n_entries,
+      t_get_last_n_entries_dirty,
+      t_get_first_n_entries,
+      t_get_first_n_entries_dirty,
+      t_key_exists,
+      t_key_exists_dirty,
+      t_delete_data,
+      t_delete_data_dirty,
+      t_delete_all_data,
+      t_delete_record,
+      t_delete_record_dirty,
+      t_delete_record_ignoring_timestamp,
+      t_delete_record_ignoring_timestamp_dirty,
+      t_get_records,
+      t_get_records_dirty,
+      t_set_and_get_data_many,
+      t_cache_expiration]}].
+
+all() ->
+    [{group, sequence},
+     {group, start_with_schema},
+     {group, crud},
+     t_app_cache_last_update_to_datetime_test].
+
+%%--------------------------------------------------------------------
+%% TEST CASES
+%%--------------------------------------------------------------------
+
+t_prop_sequence_create(_) ->
+    ?PROPTEST(prop_sequence_create).    
 
 prop_sequence_create() ->
     ?FORALL({Key, Start}, {any(), sequence_value()},
@@ -296,12 +196,15 @@ prop_sequence_create() ->
                 [#sequence_table{key =Key, value = Start}] =:= MData
             end).
 
-t_sequence_create_default() ->
+t_sequence_create_default(_) ->
     Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
     ok = app_cache:sequence_create(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = Start}], MData).
+    [#sequence_table{key =?KEY, value = Start}] =:= MData.
+
+t_prop_sequence_current_value(_) ->
+    ?PROPTEST(prop_sequence_current_value).
 
 prop_sequence_current_value() ->
     ?FORALL({Key, Start, Num}, {any(), sequence_value(), integer(0, 500)},
@@ -314,13 +217,13 @@ prop_sequence_current_value() ->
                 (Start + Num) =:= Value
             end).
 
-t_sequence_current_value_0() ->
+t_sequence_current_value_0(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     Value = app_cache:sequence_current_value(?KEY),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual(1, Value).
+    1 = Value.
 
-t_sequence_current_value_1() ->
+t_sequence_current_value_1(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
                   lists:seq(1,10)),
@@ -328,217 +231,211 @@ t_sequence_current_value_1() ->
     % 'cos the first 'next_value' is the 'set-value'
     ok = app_cache:sequence_create(?KEY, 1),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual(11, Value).
+    11 = Value.
 
-t_sequence_next_value() ->
+t_sequence_next_value(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     lists:foreach(fun(_X) -> app_cache:sequence_next_value(?KEY) end,
                   lists:seq(1,10)),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 11}], MData).
+    [#sequence_table{key =?KEY, value = 11}] = MData.
 
-t_sequence_set_value() ->
+t_sequence_set_value(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     ok = app_cache:sequence_set_value(?KEY, 9999),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 9999}], MData).
+    [#sequence_table{key =?KEY, value = 9999}] = MData.
 
-t_sequence_delete() ->
+t_sequence_delete(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     app_cache:sequence_delete(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual([], MData).
+    [] = MData.
 
-t_sequence_all_sequences() ->
-    All = app_cache:sequence_all_sequences(),
-    ?_assertEqual([], All).
+t_sequence_all_sequences(_) ->
+    [] = app_cache:sequence_all_sequences().
 
-t_sequence_all_sequences_one() ->
+t_sequence_all_sequences_one(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     All = app_cache:sequence_all_sequences(),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 1}], All).
+    [#sequence_table{key =?KEY, value = 1}] = All.
 
-t_cached_sequence_create() ->
+t_cached_sequence_create(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 1 + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}], MData).
+    [#sequence_table{key =?KEY, value = 1 + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}] = MData.
 
-t_cached_sequence_create_default() ->
+t_cached_sequence_create_default(_) ->
     Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
     ok = app_cache:cached_sequence_create(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = Start + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}], MData).
+    MData = [#sequence_table{key =?KEY, value = Start + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT}].
 
-
-t_cached_sequence_current_value_0() ->
+t_cached_sequence_current_value_0(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     Value = app_cache:cached_sequence_current_value(?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual(1, Value).
+    1 = Value.
 
-t_cached_sequence_current_value() ->
+t_cached_sequence_current_value(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
                   lists:seq(1,20)),
     Value = app_cache:cached_sequence_current_value(?KEY),
     app_cache:sequence_delete(?KEY),
-    ?_assertEqual(21, Value).
+    21 = Value.
 
-t_cached_sequence_current_value_1() ->
+t_cached_sequence_current_value_1(_) ->
+    ok = app_cache:cached_sequence_create(?KEY, 1),
     lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
                   lists:seq(1,20)),
     Value = app_cache:cached_sequence_current_value(?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual(21, Value).
+    21 = Value.
 
-t_cached_sequence_next_value() ->
+t_cached_sequence_next_value(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     lists:foreach(fun(_X) -> app_cache:cached_sequence_next_value(?KEY) end,
                   lists:seq(1,20)),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = 31}], MData).
+    [#sequence_table{key =?KEY, value = 31}] = MData.
 
-t_cached_sequence_delete() ->
+t_cached_sequence_delete(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     app_cache:cached_sequence_delete(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([], MData).
+    [] = MData.
 
-t_cached_sequence_set_value() ->
+t_cached_sequence_set_value(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     ok = app_cache:cached_sequence_set_value(?KEY, 9999),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
     Value = 9999 + ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([#sequence_table{key =?KEY, value = Value}], MData).
+    [#sequence_table{key =?KEY, value = Value}] = MData.
 
-t_cached_sequence_all_sequences() ->
-    All = app_cache:cached_sequence_all_sequences(),
-    ?_assertEqual([], All).
+t_cached_sequence_all_sequences(_) ->
+    [] = app_cache:cached_sequence_all_sequences().
 
-t_cached_sequence_all_sequences_one() ->
+t_cached_sequence_all_sequences_one(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
     All = app_cache:cached_sequence_all_sequences(),
     app_cache:cached_sequence_delete(?KEY),
-    ?_assertEqual([#sequence_cache{key =?KEY, start = 1}], All).
+    [#sequence_cache{key =?KEY, start = 1}] = All.
 
-t_table_info() ->
+t_table_info(_) ->
     Data = app_cache:table_info(?TEST_TABLE_1),
     MTableInfo = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual([Data], MTableInfo).
+    [Data] = MTableInfo.
 
-t_table_version() ->
+t_table_version(_) ->
     Data = app_cache:table_version(?TEST_TABLE_1),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual(Data, MTableInfo#app_metatable.version).
+    Data = MTableInfo#app_metatable.version.
 
-t_table_time_to_live() ->
+t_table_time_to_live(_) ->
     Data = app_cache:table_time_to_live(?TEST_TABLE_1),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual(Data, MTableInfo#app_metatable.time_to_live).
+    Data = MTableInfo#app_metatable.time_to_live.
 
-t_table_fields() ->
+t_table_fields(_) ->
     Data = app_cache:table_fields(?TEST_TABLE_1),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual(Data, MTableInfo#app_metatable.fields).
+    Data = MTableInfo#app_metatable.fields.
 
-t_cache_time_to_live() ->
+t_cache_time_to_live(_) ->
     Data = app_cache:cache_time_to_live(?TEST_TABLE_1),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual(Data, MTableInfo#app_metatable.time_to_live).
+    Data = MTableInfo#app_metatable.time_to_live.
 
-t_ttl_and_field_index() ->
+t_ttl_and_field_index(_) ->
     TableInfo = app_cache:table_info(?TEST_TABLE_1),
     Data = app_cache_processor:get_ttl_and_field_index(TableInfo),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual(Data, {MTableInfo#app_metatable.time_to_live, 2}).
+    Data = {MTableInfo#app_metatable.time_to_live, 2}.
 
-t_update_time_to_live() ->
+t_update_time_to_live(_) ->
     TTL = 700,
     app_cache:update_table_time_to_live(?TEST_TABLE_1, TTL),
     TTL = app_cache:cache_time_to_live(?TEST_TABLE_1),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
-    ?_assertEqual(TTL, MTableInfo#app_metatable.time_to_live).
+    TTL = MTableInfo#app_metatable.time_to_live.
 
-t_set_data() ->
-    Result = app_cache:set_data(?RECORD),
-    ?_assertEqual(Result, ok).
+t_set_data(_) ->
+    ok = app_cache:set_data(?RECORD).
 
-t_set_data_dirty() ->
-    Result = app_cache:set_data(dirty, ?RECORD),
-    ?_assertEqual(Result, ok).
+t_set_data_dirty(_) ->
+    ok = app_cache:set_data(dirty, ?RECORD).
 
-t_set_data_with_transform_fun() ->
+t_set_data_with_transform_fun(_) ->
     app_cache:set_write_transform_function(?TEST_TABLE_1, {function, fun transform_fun/1}),
     app_cache:set_data(?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+    2 * ?VALUE4 = Data#test_table_1.value.
 
-t_set_data_with_transform_fun_dirty() ->
+t_set_data_with_transform_fun_dirty(_) ->
     app_cache:set_write_transform_function(?TEST_TABLE_1, {function, fun transform_fun/1}),
     app_cache:set_data(dirty, ?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+    2 * ?VALUE4 = Data#test_table_1.value.
 
-t_set_data_with_sync_persist_fun1() ->
+t_set_data_with_sync_persist_fun1(_) ->
     app_cache:set_persist_function(?TEST_TABLE_1,
                                    #persist_data{synchronous = true,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+    ?VALUE4 = Data#test_table_1.value.
 
-t_set_data_with_sync_persist_fun1_dirty() ->
+t_set_data_with_sync_persist_fun1_dirty(_) ->
     app_cache:set_persist_function(?TEST_TABLE_1,
                                    #persist_data{synchronous = true,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(dirty, ?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+    ?VALUE4 = Data#test_table_1.value.
 
-t_set_data_with_async_persist_fun1() ->
+t_set_data_with_async_persist_fun1(_) ->
     app_cache:set_persist_function(?TEST_TABLE_1,
                                    #persist_data{synchronous = false,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+    ?VALUE4 = Data#test_table_1.value.
 
-t_set_data_with_async_persist_fun1_dirty() ->
+t_set_data_with_async_persist_fun1_dirty(_) ->
     app_cache:set_persist_function(?TEST_TABLE_1,
                                    #persist_data{synchronous = false,
                                                  function_identifier = {function, fun transform_fun/1}}),
     app_cache:set_data(dirty, ?RECORD4),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, ?VALUE4).
+    ?VALUE4 = Data#test_table_1.value.
 
-t_set_data_with_sync_persist_fun2() ->
+t_set_data_with_sync_persist_fun2(_) ->
     app_cache:set_persist_function(?TEST_TABLE_1,
                                    #persist_data{synchronous = true,
                                                  function_identifier = {function,
                                                                         fun(_X) -> erlang:exit(bah) end}}),
     app_cache:set_data(?RECORD4),
-    Result = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY4).
 
-t_set_data_with_sync_persist_fun2_dirty() ->
+t_set_data_with_sync_persist_fun2_dirty(_) ->
     app_cache:set_persist_function(?TEST_TABLE_1,
                                    #persist_data{synchronous = true,
                                                  function_identifier = {function,
                                                                         fun(_X) -> erlang:exit(bah) end}}),
     app_cache:set_data(dirty, ?RECORD4),
-    Result = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY4).
 
-t_set_data_with_refresh_fun1() ->
+t_set_data_with_refresh_fun1(_) ->
     app_cache:set_refresh_function(?TEST_TABLE_1, #refresh_data{before_each_read = true,
                                                                 after_each_read = false,
                                                                 refresh_interval = ?INFINITY,
@@ -547,9 +444,9 @@ t_set_data_with_refresh_fun1() ->
     %% Before, so each read already has been refreshed
     [#test_table_1{value = ?VALUE4*2}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, ?VALUE4*4).
+    Result = ?VALUE4*4.
 
-t_set_data_with_refresh_fun2() ->
+t_set_data_with_refresh_fun2(_) ->
     app_cache:set_refresh_function(?TEST_TABLE_1, #refresh_data{before_each_read = false,
                                                                 after_each_read = false,
                                                                 refresh_interval = ?INFINITY,
@@ -558,9 +455,9 @@ t_set_data_with_refresh_fun2() ->
     %% No refreshing going on
     [#test_table_1{value = ?VALUE4}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, ?VALUE4).
+    Result = ?VALUE4.
 
-t_set_data_with_refresh_fun3() ->
+t_set_data_with_refresh_fun3(_) ->
     app_cache:set_refresh_function(?TEST_TABLE_1, #refresh_data{before_each_read = false,
                                                                 after_each_read = false,
                                                                 refresh_interval = 5,
@@ -570,9 +467,9 @@ t_set_data_with_refresh_fun3() ->
     [#test_table_1{value = ?VALUE4}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     timer:sleep(7000),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, ?VALUE4*2).
+    Result = ?VALUE4*2.
 
-t_set_data_with_refresh_fun4() ->
+t_set_data_with_refresh_fun4(_) ->
     app_cache:set_refresh_function(?TEST_TABLE_1, #refresh_data{before_each_read = false,
                                                                 after_each_read = true,
                                                                 refresh_interval = ?INFINITY,
@@ -585,9 +482,9 @@ t_set_data_with_refresh_fun4() ->
     [#test_table_1{value = ?VALUE4*2}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     timer:sleep(1000),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, ?VALUE4*4).
+    Result = ?VALUE4*4.
 
-t_set_data_with_refresh_fun5() ->
+t_set_data_with_refresh_fun5(_) ->
     app_cache:set_refresh_function(?TEST_TABLE_1, #refresh_data{before_each_read = true,
                                                                 after_each_read = true,
                                                                 refresh_interval = ?INFINITY,
@@ -599,180 +496,170 @@ t_set_data_with_refresh_fun5() ->
     [#test_table_1{value = ?VALUE4*8}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     timer:sleep(1000),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Result, ?VALUE4*32).
+    Result = ?VALUE4*32.
 
-t_set_refresh_function_bad() ->
+t_set_refresh_function_bad(_) ->
     Res = app_cache:set_refresh_function(?TEST_TABLE_1, bad_function),
-    ?_assertEqual({error, {?INVALID_REFRESH_FUNCTION, {?TEST_TABLE_1, bad_function}}},
-                  Res).
+    Res = {error, {?INVALID_REFRESH_FUNCTION, {?TEST_TABLE_1, bad_function}}}.
 
-t_set_persist_function_bad() ->
+t_set_persist_function_bad(_) ->
     Res = app_cache:set_persist_function(?TEST_TABLE_1, bad_function),
-    ?_assertEqual({error, {?INVALID_PERSIST_FUNCTION, {?TEST_TABLE_1, bad_function}}},
-                  Res).
+    Res = {error, {?INVALID_PERSIST_FUNCTION, {?TEST_TABLE_1, bad_function}}}.
 
-t_get_data() ->
+t_get_data(_) ->
     ok = app_cache:set_data(?RECORD),
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(?VALUE, Data#test_table_1.value).
+    ?VALUE = Data#test_table_1.value.
 
-t_get_data_dirty() ->
+t_get_data_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     [Data] = app_cache:get_data(dirty, ?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(?VALUE, Data#test_table_1.value).
+    ?VALUE = Data#test_table_1.value.
 
-
-t_get_data_with_transform_fun() ->
+t_get_data_with_transform_fun(_) ->
     app_cache:set_read_transform_function(?TEST_TABLE_1, {function, fun transform_fun/1}),
     app_cache:set_data(?RECORD4),
     [CleanData] = mnesia:dirty_read(?TEST_TABLE_1, ?KEY4),
     OldValue = CleanData#test_table_1.value,
     OldValue = ?VALUE4,
     [Data] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+    2 * ?VALUE4 = Data#test_table_1.value.
 
-t_get_data_with_transform_fun_dirty() ->
+t_get_data_with_transform_fun_dirty(_) ->
     app_cache:set_read_transform_function(?TEST_TABLE_1, {function, fun transform_fun/1}),
     app_cache:set_data(?RECORD4),
     [CleanData] = mnesia:dirty_read(?TEST_TABLE_1, ?KEY4),
     OldValue = CleanData#test_table_1.value,
     OldValue = ?VALUE4,
     [Data] = app_cache:get_data(dirty, ?TEST_TABLE_1, ?KEY4),
-    ?_assertEqual(Data#test_table_1.value, 2 * ?VALUE4).
+    2 * ?VALUE4 = Data#test_table_1.value.
 
-t_get_bag_data() ->
+t_get_bag_data(_) ->
     ok = app_cache:set_data(?RECORD30),
     ok = app_cache:set_data(?RECORD31),
     Data = app_cache:get_data(?TEST_TABLE_2, ?KEY),
-    ?_assertEqual(2, length(Data)).
+    2 = length(Data).
 
-t_get_bag_data_dirty() ->
+t_get_bag_data_dirty(_) ->
     ok = app_cache:set_data(?RECORD30),
     ok = app_cache:set_data(?RECORD31),
     Data = app_cache:get_data(dirty, ?TEST_TABLE_2, ?KEY),
-    ?_assertEqual(2, length(Data)).
+    2 = length(Data).
 
-t_set_data_overwriting_timestamp() ->
+t_set_data_overwriting_timestamp(_) ->
     ok = app_cache:set_data(?RECORD30),
     ok = app_cache:set_data_overwriting_timestamp(?RECORD30),
     [Data] = app_cache:get_data(?TEST_TABLE_2, ?KEY),
-    ?_assertEqual({?KEY, ?VALUE, ?NAME},
-                  {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name}).
+    {?KEY, ?VALUE, ?NAME} =
+        {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name}.
 
-t_set_data_overwriting_timestamp_dirty() ->
+t_set_data_overwriting_timestamp_dirty(_) ->
     ok = app_cache:set_data(?RECORD30),
     ok = app_cache:set_data_overwriting_timestamp(dirty, ?RECORD30),
     [Data] = app_cache:get_data(?TEST_TABLE_2, ?KEY),
-    ?_assertEqual({?KEY, ?VALUE, ?NAME},
-                  {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name}).
+    {?KEY, ?VALUE, ?NAME} =
+        {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name}.
 
-t_get_data_from_index() ->
+t_get_data_from_index(_) ->
     ok = app_cache:set_data(?RECORD),
     [Data] = app_cache:get_data_from_index(?TEST_TABLE_1, ?NAME, name),
-    ?_assertEqual(?VALUE, Data#test_table_1.value).
+    ?VALUE = Data#test_table_1.value.
 
-t_get_data_from_index_dirty() ->
+t_get_data_from_index_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     [Data] = app_cache:get_data_from_index(dirty, ?TEST_TABLE_1, ?NAME, name),
-    ?_assertEqual(?VALUE, Data#test_table_1.value).
+    ?VALUE = Data#test_table_1.value.
 
-t_get_last_entered_data() ->
+t_get_last_entered_data(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     [Data] = app_cache:get_data_by_last_key(?TEST_TABLE_1),
-    ?_assertEqual(?VALUE2, Data#test_table_1.value).
+    ?VALUE2 = Data#test_table_1.value.
 
-t_get_last_entered_data_dirty() ->
+t_get_last_entered_data_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     [Data] = app_cache:get_data_by_last_key(dirty, ?TEST_TABLE_1),
-    ?_assertEqual(?VALUE2, Data#test_table_1.value).
+    ?VALUE2 = Data#test_table_1.value.
 
-t_get_first_entered_data() ->
+t_get_first_entered_data(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     [Data] = app_cache:get_data_by_first_key(?TEST_TABLE_1),
-    ?_assertEqual(?VALUE, Data#test_table_1.value).
+    ?VALUE = Data#test_table_1.value.
 
-t_get_first_entered_data_dirty() ->
+t_get_first_entered_data_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     [Data] = app_cache:get_data_by_first_key(dirty, ?TEST_TABLE_1),
-    ?_assertEqual(?VALUE, Data#test_table_1.value).
+    ?VALUE = Data#test_table_1.value.
 
-t_get_last_n_entries() ->
+t_get_last_n_entries(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     ok = app_cache:set_data(?RECORD3),
     [_H|[T]] = app_cache:get_last_n_entries(?TEST_TABLE_1, 2),
-    ?_assertEqual(?VALUE2, T#test_table_1.value).
+    ?VALUE2 = T#test_table_1.value.
 
-t_get_last_n_entries_dirty() ->
+t_get_last_n_entries_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     ok = app_cache:set_data(?RECORD3),
     [_H|[T]] = app_cache:get_last_n_entries(dirty, ?TEST_TABLE_1, 2),
-    ?_assertEqual(?VALUE2, T#test_table_1.value).
+    ?VALUE2 = T#test_table_1.value.
 
-t_get_first_n_entries() ->
+t_get_first_n_entries(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     ok = app_cache:set_data(?RECORD3),
     [_H|[T]] = app_cache:get_first_n_entries(?TEST_TABLE_1, 2),
-    ?_assertEqual(?VALUE2, T#test_table_1.value).
+    ?VALUE2 = T#test_table_1.value.
 
-t_get_first_n_entries_dirty() ->
+t_get_first_n_entries_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:set_data(?RECORD2),
     ok = app_cache:set_data(?RECORD3),
     [_H|[T]] = app_cache:get_first_n_entries(dirty, ?TEST_TABLE_1, 2),
-    ?_assertEqual(?VALUE2, T#test_table_1.value).
+     ?VALUE2 = T#test_table_1.value.
 
-t_key_exists() ->
+t_key_exists(_) ->
     false = app_cache:key_exists(?TEST_TABLE_1, ?KEY),
     ok = app_cache:set_data(?RECORD),
-    Result = app_cache:key_exists(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Result, true).
+    true = app_cache:key_exists(?TEST_TABLE_1, ?KEY).
 
-t_key_exists_dirty() ->
+t_key_exists_dirty(_) ->
     false = app_cache:key_exists(dirty, ?TEST_TABLE_1, ?KEY),
     ok = app_cache:set_data(?RECORD),
-    Result = app_cache:key_exists(dirty, ?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Result, true).
+    true = app_cache:key_exists(dirty, ?TEST_TABLE_1, ?KEY).
 
-t_delete_data() ->
+t_delete_data(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:remove_data(safe, ?TEST_TABLE_1, ?KEY),
-    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Data, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
 
-t_delete_data_dirty() ->
+t_delete_data_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:remove_data(dirty, ?TEST_TABLE_1, ?KEY),
-    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Data, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
 
-t_delete_all_data() ->
+t_delete_all_data(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:remove_all_data(?TEST_TABLE_1),
-    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Data, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
 
-t_delete_record() ->
+t_delete_record(_) ->
     ok = app_cache:set_data(?RECORD),
     [Record] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
     app_cache:remove_record(Record),
-    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Data, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
 
-t_delete_record_dirty() ->
+t_delete_record_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     [Record] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
     app_cache:remove_record(dirty, Record),
-    Data = app_cache:get_data(?TEST_TABLE_1, ?KEY),
-    ?_assertEqual(Data, []).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
 
-t_delete_record_ignoring_timestamp() ->
+t_delete_record_ignoring_timestamp(_) ->
     ok = app_cache:set_data(?RECORD30),
     %% timestamps have 1s resolution
     receive
@@ -780,12 +667,11 @@ t_delete_record_ignoring_timestamp() ->
             ok
     end,
     ok = app_cache:set_data(?RECORD30),
-    Len = length(app_cache:get_data(?TEST_TABLE_2, ?KEY)),
+    2 = length(app_cache:get_data(?TEST_TABLE_2, ?KEY)),
     app_cache:remove_record_ignoring_timestamp(?RECORD30),
-    Data = app_cache:get_data(?TEST_TABLE_2, ?KEY),
-    ?_assertEqual({[], 2}, {Data, Len}).
+    [] = app_cache:get_data(?TEST_TABLE_2, ?KEY).
 
-t_delete_record_ignoring_timestamp_dirty() ->
+t_delete_record_ignoring_timestamp_dirty(_) ->
     ok = app_cache:set_data(?RECORD30),
     %% timestamps have 1s resolution
     receive
@@ -793,12 +679,11 @@ t_delete_record_ignoring_timestamp_dirty() ->
             ok
     end,
     ok = app_cache:set_data(?RECORD30),
-    Len = length(app_cache:get_data(?TEST_TABLE_2, ?KEY)),
+    2 = length(app_cache:get_data(?TEST_TABLE_2, ?KEY)),
     app_cache:remove_record_ignoring_timestamp(dirty, ?RECORD30),
-    Data = app_cache:get_data(?TEST_TABLE_2, ?KEY),
-    ?_assertEqual({[], 2}, {Data, Len}).
+    [] = app_cache:get_data(?TEST_TABLE_2, ?KEY).
 
-t_get_records() ->
+t_get_records(_) ->
     ok = app_cache:set_data(?RECORD30),
     %% timestamps have 1s resolution
     receive
@@ -806,10 +691,9 @@ t_get_records() ->
             ok
     end,
     ok = app_cache:set_data(?RECORD30),
-    Len = length(app_cache:get_records(?RECORD30)),
-    ?_assertEqual(2, Len).
+    2 = length(app_cache:get_records(?RECORD30)).
 
-t_get_records_dirty() ->
+t_get_records_dirty(_) ->
     ok = app_cache:set_data(?RECORD30),
     %% timestamps have 1s resolution
     receive
@@ -817,46 +701,42 @@ t_get_records_dirty() ->
             ok
     end,
     ok = app_cache:set_data(?RECORD30),
-    Len = length(app_cache:get_records(dirty, ?RECORD30)),
-    ?_assertEqual(2, Len).
+    2 = length(app_cache:get_records(dirty, ?RECORD30)).
 
-t_set_and_get_data_many() ->
+t_set_and_get_data_many(_) ->
     LoadFun = get_load_data_fun(100),
     LoadFun(),
     [Data] = app_cache:get_data(?TEST_TABLE_1, 35),
-    ?_assertEqual(Data#test_table_1.value, {35}).
+    {35} = Data#test_table_1.value.
 
-t_cache_expiration() ->
+t_cache_expiration(_) ->
     app_cache:update_table_time_to_live(?TEST_TABLE_1, 2),
     app_cache_scavenger:reset_timer(?TEST_TABLE_1),
     timer:sleep(1000),
     LoadFun = get_load_data_fun(10),
     {_LTime, _LValue} = timer:tc(LoadFun),
     timer:sleep(10000),
-    Data1 = app_cache:get_after(?TEST_TABLE_1, 0),
-    ?_assertEqual(Data1, []).
+    [] = app_cache:get_after(?TEST_TABLE_1, 0).
 
-t_init_table() ->
-    Res = app_cache:init_table(?TEST_TABLE_1),
-    ?_assertEqual(ok, Res).
+t_init_table(_) ->
+    ok = app_cache:init_table(?TEST_TABLE_1).
 
-t_init_table_nodes() ->
-    Res = app_cache:init_table(?TEST_TABLE_2, [node()]),
-    ?_assertEqual(ok, Res).
+t_init_table_nodes(_) ->
+    ok = app_cache:init_table(?TEST_TABLE_2, [node()]).
 
-t_init_metatable() ->
-    Res = app_cache:init_metatable(),
-    ?_assertEqual(ok, Res).
+t_init_metatable(_) ->
+    ok = app_cache:init_metatable().
 
-t_init_metatable_nodes() ->
-    Res = app_cache:init_metatable([node()]),
-    ?_assertEqual(ok, Res).
+t_init_metatable_nodes(_) ->
+    ok = app_cache:init_metatable([node()]).
 
-t_get_metatable() ->
+t_get_metatable(_) ->
     Res = app_cache:get_metatable(),
     Metatables = [M || M = #app_metatable{} <- Res],
-    ?_assert(length(Metatables) > 0).
+    true = (length(Metatables) > 0).
 
+t_app_cache_last_update_to_datetime_test(_) ->
+    {{0,1,1},{0,0,0}} = app_cache:last_update_to_datetime(0).
 
 get_load_data_fun(Count) ->
     fun() ->
@@ -865,8 +745,7 @@ get_load_data_fun(Count) ->
 
 empty_all_tables() ->
     lists:foreach(fun(Table) -> empty_table(Table) end, [?TEST_TABLE_1, ?TEST_TABLE_2]),
-    app_cache:sequence_delete(?KEY),
-    ?_assertEqual(ok, ok).
+    app_cache:sequence_delete(?KEY).
 
 empty_table(Table) ->
     DeleteFun = fun() ->
@@ -879,3 +758,23 @@ empty_table(Table) ->
 
 transform_fun(Record) ->
     Record#test_table_1{value = 2 * Record#test_table_1.value}.
+
+%%
+%% Setup Functions
+%%
+start() ->
+    app_cache:setup(),
+    app_cache:start(),
+    app_cache:create_table(?TABLE1),
+    app_cache:create_table(?TABLE2),
+    app_cache:create_table(?TABLE3).
+
+
+stop() ->
+    app_cache:stop(),
+    mnesia:delete_schema([node()]).
+
+start_with_schema() ->
+    start(),
+    app_cache:stop(),
+    app_cache:start().

@@ -30,7 +30,7 @@ dialyze: compile
 	@dialyzer -r .
 
 test:
-	@rebar skip_deps=true eunit
+	@rebar skip_deps=true ct verbose=1
 
 console:
 	$(ERL) -sname $(APPLICATION) $(EPATH) -config app
