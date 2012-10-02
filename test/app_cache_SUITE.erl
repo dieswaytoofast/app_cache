@@ -15,8 +15,8 @@
 %% Defines
 %% ------------------------------------------------------------------
 
--define(PROPTEST(A), proper:quickcheck(A())).
--define(PROPTEST(M,F), proper:quickcheck(M:F())).
+-define(PROPTEST(A), true = proper:quickcheck(A())).
+-define(PROPTEST(M,F), true = proper:quickcheck(M:F())).
 
 %%% Dummy data
 -define(TEST_TABLE_1, test_table_1).
@@ -104,6 +104,7 @@ groups() ->
        t_sequence_delete,
        t_sequence_all_sequences,
        t_sequence_all_sequences_one,
+       t_sequence_statem,
        t_cached_sequence_create,
        t_cached_sequence_create_default,
        t_cached_sequence_current_value_0,
@@ -199,14 +200,14 @@ prop_sequence_create() ->
                 ok = app_cache:sequence_create(Key, Start),
                 MData = mnesia:dirty_read(sequence_table, Key),
                 app_cache:sequence_delete(Key),
-                [#sequence_table{key =Key, value = Start}] =:= MData
+                [#sequence_table{key = Key, value = Start}] =:= MData
             end).
 
 t_sequence_create_default(_) ->
     Start = app_cache:get_env(cache_start, ?DEFAULT_CACHE_START),
     ok = app_cache:sequence_create(?KEY),
     MData = mnesia:dirty_read(sequence_table, ?KEY),
-    [#sequence_table{key =?KEY, value = Start}] =:= MData.
+    [#sequence_table{key = ?KEY, value = Start}] =:= MData.
 
 t_prop_sequence_current_value(_) ->
     ?PROPTEST(prop_sequence_current_value).
@@ -219,7 +220,7 @@ prop_sequence_current_value() ->
                               lists:seq(1, Num)),
                 Value = app_cache:sequence_current_value(Key),
                 app_cache:sequence_delete(Key),
-                (Start + Num) =:= Value
+                Value =:= (Start + Num)
             end).
 
 t_sequence_current_value_0(_) ->
@@ -262,6 +263,9 @@ t_sequence_all_sequences_one(_) ->
     ok = app_cache:sequence_create(?KEY, 1),
     All = app_cache:sequence_all_sequences(),
     [#sequence_table{key =?KEY, value = 1}] = All.
+
+t_sequence_statem(_) ->
+    ?PROPTEST(app_cache_sequence_proper, prop_sequence).
 
 t_cached_sequence_create(_) ->
     ok = app_cache:cached_sequence_create(?KEY, 1),
