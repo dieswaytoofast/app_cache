@@ -89,6 +89,8 @@ init_per_testcase(_TestCase, Config) ->
 
 end_per_testcase(sequence, _Config) ->
     app_cache:sequence_delete(?KEY);
+end_per_testcase(cached_sequence, _Config) ->
+    app_cache:cached_sequence_delete(?KEY);
 end_per_testcase(_TestCase, _Config) ->
     empty_all_tables().
 
@@ -104,8 +106,10 @@ groups() ->
        t_sequence_delete,
        t_sequence_all_sequences,
        t_sequence_all_sequences_one,
-       t_sequence_statem,
-       t_cached_sequence_create,
+       t_sequence_statem]},
+
+     {cached_sequence, [],
+      [t_cached_sequence_create,
        t_cached_sequence_create_default,
        t_cached_sequence_current_value_0,
        t_cached_sequence_current_value,
@@ -114,7 +118,8 @@ groups() ->
        t_cached_sequence_delete,
        t_cached_sequence_set_value,
        t_cached_sequence_all_sequences,
-       t_cached_sequence_all_sequences_one
+       t_cached_sequence_all_sequences_one,
+       t_cached_sequence_statem
       ]},
 
     {start_with_schema, [],
@@ -183,6 +188,7 @@ groups() ->
 
 all() ->
     [{group, sequence},
+     {group, cached_sequence},
      {group, start_with_schema},
      {group, crud},
      t_app_cache_last_update_to_datetime_test].
@@ -332,6 +338,9 @@ t_cached_sequence_all_sequences_one(_) ->
     All = app_cache:cached_sequence_all_sequences(),
     app_cache:cached_sequence_delete(?KEY),
     [#sequence_cache{key =?KEY, start = 1}] = All.
+
+t_cached_sequence_statem(_) ->
+    ?PROPTEST(app_cache_cached_sequence_proper, prop_sequence).
 
 t_table_info(_) ->
     Data = app_cache:table_info(?TEST_TABLE_1),
