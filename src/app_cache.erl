@@ -26,7 +26,7 @@
 %% Mnesia utility APIs
 -export([get_env/0, get_env/1, get_env/2]).
 -export([setup/0, setup/1,
-         start/0, stop/0, 
+         start/0, stop/0,
          cache_init/1, cache_init/2,
          init_metatable/0, init_metatable/1, init_table/1, init_table/2,
          get_metatable/0,
@@ -35,7 +35,7 @@
          table_info/1, table_version/1, table_time_to_live/1, table_fields/1,
          update_table_time_to_live/2,
          last_update_to_datetime/1, current_time_in_gregorian_seconds/0,
-         cache_time_to_live/1, 
+         cache_time_to_live/1,
          get_record_fields/1,
          set_read_transform_function/2, set_write_transform_function/2,
          set_refresh_function/2,
@@ -43,34 +43,34 @@
         ]).
 
 %% Data accessor APIs
--export([key_exists/2, 
-         get_data_from_index/3, get_data/2, get_all_data/1, 
-         get_data_by_last_key/1, get_data_by_first_key/1, 
-         get_last_n_entries/2, get_first_n_entries/2, 
+-export([key_exists/2,
+         get_data_from_index/3, get_data/2, get_all_data/1,
+         get_data_by_last_key/1, get_data_by_first_key/1,
+         get_last_n_entries/2, get_first_n_entries/2,
          get_records/1,
-         get_after/2, 
+         get_after/2,
          set_data/1, set_data_overwriting_timestamp/1,
-         remove_data/2, remove_all_data/1, 
+         remove_data/2, remove_all_data/1,
          remove_record/1, remove_record_ignoring_timestamp/1]).
--export([key_exists/3, 
-         get_data_from_index/4, get_data/3, get_all_data/2, 
+-export([key_exists/3,
+         get_data_from_index/4, get_data/3, get_all_data/2,
          get_data_by_last_key/2, get_data_by_first_key/2,
          get_records/2,
          get_after/3,
          set_data/2,set_data_overwriting_timestamp/2,
-         get_last_n_entries/3, get_first_n_entries/3, 
-         remove_data/3, remove_all_data/2, 
+         get_last_n_entries/3, get_first_n_entries/3,
+         remove_data/3, remove_all_data/2,
          remove_record/2, remove_record_ignoring_timestamp/2]).
 
--export([sequence_create/1, sequence_create/2, 
-         sequence_set_value/2, 
-         sequence_current_value/1, sequence_next_value/1, sequence_next_value/2, 
+-export([sequence_create/1, sequence_create/2,
+         sequence_set_value/2,
+         sequence_current_value/1, sequence_next_value/1, sequence_next_value/2,
          sequence_delete/1,
          sequence_all_sequences/0]).
--export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3, 
-         cached_sequence_set_value/2, 
+-export([cached_sequence_create/1, cached_sequence_create/2, cached_sequence_create/3,
+         cached_sequence_set_value/2,
          cached_sequence_current_value/1, cached_sequence_next_value/1, cached_sequence_next_value/2,
-         cached_sequence_delete/1, 
+         cached_sequence_delete/1,
          cached_sequence_all_sequences/0]).
 
 
@@ -232,7 +232,7 @@ get_data(Table, Key) ->
     get_data(?TRANSACTION_TYPE_SAFE, Table, Key).
 
 -spec get_data(transaction_type(), Table::table(), Key::table_key()) -> [any()].
-%% @doc Get all the records from the Table with the key Key 
+%% @doc Get all the records from the Table with the key Key
 %% @end
 get_data(TransactionType, Table, Key) ->
     app_cache_processor:read_data(TransactionType, Table, Key).
@@ -244,7 +244,7 @@ get_data_from_index(Table, Value, IndexField) ->
 
 -spec get_data_from_index(transaction_type(), Table::table(), Value::table_key(), IndexField::table_key()) -> [any()].
 %% @doc Get all the records from the Table where the Value matches the value
-%%      in field IndexField 
+%%      in field IndexField
 %%      <p>e.g. get_data_from_index(test_table_1, "some thing here", value)</p>
 %%      <p>where 'value' is an indexed field in test_table_1</p>
 %% @end
@@ -257,7 +257,7 @@ get_data_by_last_key(Table) ->
     get_data_by_last_key(?TRANSACTION_TYPE_SAFE, Table).
 
 -spec get_data_by_last_key(transaction_type(), Table::table()) -> [any()].
-%% @doc Get the last item (in erlang term order) in Table.  
+%% @doc Get the last item (in erlang term order) in Table.
 %%      Performant on <i>ordered_set</i>s
 %% @end
 get_data_by_last_key(TransactionType, Table) ->
@@ -269,7 +269,7 @@ get_data_by_first_key(Table) ->
     get_data_by_first_key(?TRANSACTION_TYPE_SAFE, Table).
 
 -spec get_data_by_first_key(transaction_type(), Table::table()) -> [any()].
-%% @doc Get the first item (in erlang term order) in Table.  
+%% @doc Get the first item (in erlang term order) in Table.
 %%      Performant on <i>ordered_set</i>s
 %% @end
 get_data_by_first_key(TransactionType, Table) ->
@@ -294,7 +294,7 @@ get_first_n_entries(Table, N) ->
 
 -spec get_first_n_entries(transaction_type(), Table::table(), pos_integer()) -> [any()].
 %% @doc Get the first N entries in the table. <i>First</i> is in erlang term
-%%      order. 
+%%      order.
 %%      <p>Performant on <i>ordered_set</i>s, requires table scans for all other table types</p>
 %% @end
 get_first_n_entries(TransactionType, Table, N) ->
@@ -308,7 +308,7 @@ get_after(Table, After) ->
 %% Get data after (in erlang term order) a value
 -spec get_after(transaction_type(), table(), table_key()) -> [any()].
 %% @doc Get all the entries in a table greater than or equal to the Key "After". Keys are sorted in
-%%      erlang term order.  
+%%      erlang term order.
 %%      <p>Performant on <i>ordered_set</i>s, requires table scans for all other table types</p>
 %% @end
 get_after(TransactionType, Table, After) ->
@@ -346,7 +346,7 @@ set_data(Value) ->
     set_data(?TRANSACTION_TYPE_SAFE, Value).
 
 -spec set_data(transaction_type(), Value::tuple()) -> ok | error().
-%% @doc Write the record "Value" to the table 
+%% @doc Write the record "Value" to the table
 %%      <p>The table name is element(1, Value)</p>
 %% @end
 set_data(TransactionType, Value) ->
@@ -358,7 +358,7 @@ set_data_overwriting_timestamp(Value) ->
     set_data_overwriting_timestamp(?TRANSACTION_TYPE_SAFE, Value).
 
 -spec set_data_overwriting_timestamp(transaction_type(), Value::tuple()) -> ok | error().
-%% @doc If your table is a <i>bag</i> and contains a <i>timestamp</i> field, 
+%% @doc If your table is a <i>bag</i> and contains a <i>timestamp</i> field,
 %%      but you actually don't care about the timestamp in your
 %%      records, then <i>set_data</i> will create new records each time you write.
 %%      <p> This is something you probably won't appreciate</p>
@@ -395,7 +395,7 @@ remove_record(Record) ->
     remove_record(?TRANSACTION_TYPE_SAFE, Record).
 
 -spec remove_record(transaction_type(), tuple()) -> ok | error().
-%% @doc Remove the record Record. 
+%% @doc Remove the record Record.
 %%      <p>Note that <i>all</i> fields need to match, including <i>timestamp</i></p>
 remove_record(TransactionType, Record) ->
     app_cache_processor:delete_record(TransactionType, _IgnoreTimestamp = false, Record).
@@ -621,5 +621,3 @@ get_sequence_value([{_Table, _Key, Value}]) ->
     Value;
 get_sequence_value(_) ->
     undefined.
-
-
