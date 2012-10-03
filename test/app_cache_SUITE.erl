@@ -135,6 +135,7 @@ groups() ->
       t_table_time_to_live,
       t_table_fields,
       t_cache_time_to_live,
+      t_cache_time_to_live_bad_table,
       t_ttl_and_field_index,
       t_update_time_to_live,
       t_set_data,
@@ -366,6 +367,9 @@ t_cache_time_to_live(_) ->
     Data = app_cache:cache_time_to_live(?TEST_TABLE_1),
     [MTableInfo] = mnesia:dirty_read(app_metatable, ?TEST_TABLE_1),
     Data = MTableInfo#app_metatable.time_to_live.
+
+t_cache_time_to_live_bad_table(_) ->
+    {error, _} = app_cache:cache_time_to_live(bad_table).
 
 t_ttl_and_field_index(_) ->
     TableInfo = app_cache:table_info(?TEST_TABLE_1),
