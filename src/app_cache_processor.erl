@@ -96,26 +96,36 @@ get_ttl_and_field_index(TableInfo) ->
     get_ttl_and_field_index_internal(TableInfo).
 
 % TODO make this dependant on the node
--spec upgrade_metatable() -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_metatable() -> ok | error().
 upgrade_metatable() ->
     upgrade_table(?METATABLE, app_cache:get_record_fields(?METATABLE)).
 
--spec upgrade_table(table()) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table()) -> ok | error().
 upgrade_table(Table) ->
     Fields = app_cache:table_fields(Table),
     upgrade_table(Table, Fields).
 
 
--spec upgrade_table(table(), [app_field()]) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table(), [app_field()]) -> ok | error().
 upgrade_table(Table, Fields) ->
     %% Replace 'ignore' with a function that performs the schema upgrade once the schema changes.
-    mnesia:transform_table(Table, ignore, Fields, Table).
+    case mnesia:transform_table(Table, ignore, Fields, Table) of
+        {atomic, ok} ->
+            ok;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec upgrade_table(table(), OldVersion :: non_neg_integer(), NewVersion :: non_neg_integer(), [app_field()]) ->
-                           {atomic, ok} | {aborted, Reason :: any()}.
+                           ok | error().
 upgrade_table(Table, _OldVersion, _NewVersion, Fields) ->
     %% Replace 'ignore' with a function that performs the schema upgrade once the schema changes.
-    mnesia:transform_table(Table, ignore, Fields, Table).
+    case mnesia:transform_table(Table, ignore, Fields, Table) of
+        {atomic, ok} ->
+            ok;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec get_functions(table()) -> #data_functions{} | undefined.
 get_functions(Table) ->

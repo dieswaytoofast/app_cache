@@ -158,20 +158,20 @@ create_table(TableInfo, Nodes) ->
     gen_server:call(?PROCESSOR, {create_table, TableInfo, Nodes}).
 
 % TODO make this dependant on the node
--spec upgrade_metatable() -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_metatable() -> ok | error().
 upgrade_metatable() ->
     app_cache_processor:upgrade_metatable().
 
--spec upgrade_table(table()) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table()) -> ok | error().
 upgrade_table(Table) ->
     app_cache_processor:upgrade_table(Table).
 
 
--spec upgrade_table(table(), [app_field()]) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table(), [app_field()]) -> ok | error().
 upgrade_table(Table, Fields) ->
     app_cache_processor:upgrade_table(Table, Fields).
 
--spec upgrade_table(table(), OldVersion :: non_neg_integer(), NewVersion :: non_neg_integer(), [app_field()]) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table(), OldVersion :: non_neg_integer(), NewVersion :: non_neg_integer(), [app_field()]) -> ok | error().
 upgrade_table(Table, OldVersion, NewVersion, Fields) ->
     app_cache_processor:upgrade_table(Table, OldVersion, NewVersion, Fields).
 
