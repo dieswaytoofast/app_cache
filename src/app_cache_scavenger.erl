@@ -67,7 +67,7 @@ scavenge(Table) ->
 get_timers() ->
     gen_server:call(?SERVER, {get_timers}).
 
--spec reset_timer(table()) -> ok | error().
+-spec reset_timer(table()) -> ok.
 reset_timer(Table) ->
     gen_server:cast(?SERVER, {reset_timer, Table}).
 
@@ -91,9 +91,8 @@ init([]) ->
 handle_call({get_timers}, _From, #state{timers = Timers} = State) ->
     {reply, Timers, State};
 
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+handle_call(Request, _From, State) ->
+    {stop, {unhandled_call, Request}, State}.
 
 handle_cast({reset_cache}, _State) ->
     Timers = reset_cache_internal(),
@@ -103,8 +102,8 @@ handle_cast({reset_timer, Table}, #state{timers = Timers} = State) ->
     {_Response, FinalTimers} = case mnesia:transaction(fun() -> mnesia:read(?METATABLE, Table) end) of
         {atomic, [#app_metatable{time_to_live = TimeToLive}]} ->
             {ok, update_timers(Table, TimeToLive, Timers)};
-        [] ->
-            {{error, {invalid_table, Table}}, Timers}
+        {aborted, Reason} ->
+            {{error, {invalid_table, Table, Reason}}, Timers}
     end, 
     {noreply, State#state{timers = FinalTimers}};
 
@@ -119,12 +118,12 @@ handle_cast({scavenge, Table}, #state{timers = Timers} = State) ->
     end,
     {noreply, State#state{timers = FinalTimers}};
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast(Msg, State) ->
+    {stop, {unhandled_cast, Msg}, State}.
 
 
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->
@@ -169,8 +168,8 @@ expired_entries(Table) ->
             mnesia:dirty_select(Table, [{MatchHead, Guard, Result}])
     end.
 
-%% @doc Deletes and recreates the timer for a given table in the timers list
--spec update_timers(table(), time_to_live(), list()) -> list().
+%% @doc Deletes and recreates the timer for a given table in the timers dict
+-spec update_timers(table(), time_to_live(), dict()) -> dict().
 update_timers(Table, TimeToLive, Timers) ->
     Timers1 = cancel_old_timer(Table, Timers),
     case get_new_timer(Table, TimeToLive) of
@@ -181,7 +180,7 @@ update_timers(Table, TimeToLive, Timers) ->
     end.
 
 %% @doc Removes a timer entry from the list of timers
--spec cancel_old_timer(table(), list()) -> list().
+-spec cancel_old_timer(table(), dict()) -> dict().
 cancel_old_timer(Table, Timers) ->
     case dict:find(Table, Timers) of
         {ok, {_TimeToLive, TimerRef}} ->
@@ -192,13 +191,10 @@ cancel_old_timer(Table, Timers) ->
     end.
 
 %% @doc Create timers to activate the scavenger for the table
--spec get_new_timer(Table::table(), TimeToLive::time_to_live()) -> any().
+-spec get_new_timer(Table::table(), TimeToLive::time_to_live()) ->
+                           undefined | {table(), {time_to_live(), reference()}}.
+get_new_timer(_Table, ?INFINITY) ->
+    undefined;
 get_new_timer(Table, TimeToLive) ->
-    case TimeToLive of
-        ?INFINITY ->
-            undefined;
-        _ ->
-            {ok, TimerRef} = timer:apply_interval(TimeToLive * ?SCAVENGE_FACTOR, ?SERVER, scavenge, [Table]),
-            {Table, {TimeToLive, TimerRef}}
-    end.
-
+    {ok, TimerRef} = timer:apply_interval(TimeToLive * ?SCAVENGE_FACTOR, ?SERVER, scavenge, [Table]),
+    {Table, {TimeToLive, TimerRef}}.

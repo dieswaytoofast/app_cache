@@ -69,17 +69,17 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
--spec refresh_data(transaction_type(), table(), [table_key()]) -> ok | error().
+-spec refresh_data(async | sync, table(), [table_key()]) -> ok | error().
 refresh_data(async, Table, KeyList) ->
     gen_server:cast(?SERVER, {refresh_data, Table, KeyList});
 refresh_data(sync, Table, KeyList) ->
     gen_server:call(?SERVER, {refresh_data, Table, KeyList}).
 
--spec remove_function(table()) -> ok | error().
+-spec remove_function(table()) -> ok.
 remove_function(Table) ->
     gen_server:cast(?SERVER, {remove_function, Table}).
 
--spec reset_function(table()) -> ok | error().
+-spec reset_function(table()) -> ok.
 reset_function(Table) ->
     gen_server:cast(?SERVER, {reset_function, Table}).
 
@@ -90,7 +90,7 @@ remove_key(Table, Key) ->
     gen_server:call(?SERVER, {remove_key, Table, Key}).
 
 %% @doc remove all the entries for this table
--spec clear_table(table()) -> ok | error().
+-spec clear_table(table()) -> ok.
 clear_table(Table) ->
     gen_server:cast(?SERVER, {clear_table, Table}).
 
@@ -125,7 +125,7 @@ init([]) ->
 handle_call({refresh_data, Table, KeyList}, _From, State) ->
     case dict:find(Table, State#state.functions) of
         {ok, RefreshData} -> 
-            update_refresh_table(sync, RefreshData, Table, KeyList);
+            ok = update_refresh_table(sync, RefreshData, Table, KeyList);
         error ->
             Error = {{error, {invalid_table, Table}}, State#state.functions},
             lager:error("Error:~p~n", [Error])
@@ -136,15 +136,11 @@ handle_call({remove_key, Table, Key}, _From, #state{functions = Functions} = Sta
     Response = 
     case dict:is_key(Table, Functions) of
         true ->
-            remove_entry_from_table(Table, Key);
+            ok = remove_entry_from_table(Table, Key);
         false ->
             ok
     end,
-    {reply, Response, State};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    {reply, Response, State}.
 
 handle_cast({clear_table, Table}, #state{functions = Functions} = State) ->
     case dict:is_key(Table, Functions) of
@@ -169,7 +165,7 @@ handle_cast({remove_function, Table}, #state{functions = Functions} = State) ->
 handle_cast({refresh_data, Table, KeyList}, State) ->
     case dict:find(Table, State#state.functions) of
         {ok, RefreshData} -> 
-            update_refresh_table(async, RefreshData, Table, KeyList);
+            ok = update_refresh_table(async, RefreshData, Table, KeyList);
         error ->
             Error = {{error, {invalid_table, Table}}, State#state.functions},
             lager:error("Error:~p~n", [Error])
@@ -178,7 +174,7 @@ handle_cast({refresh_data, Table, KeyList}, State) ->
 
 handle_cast({reset_cache}, _State) ->
     Functions = reset_cache_internal(),
-    reset_table_entries(Functions),
+    ok = reset_table_entries(Functions),
     {noreply, #state{functions = Functions}};
 
 handle_cast({reset_function, Table}, #state{functions = Functions} = State) ->
@@ -189,20 +185,16 @@ handle_cast({reset_function, Table}, #state{functions = Functions} = State) ->
             remove_all_table_entries(Table),
             {{error, {invalid_table, Table}}, Functions}
     end, 
-    {noreply, State#state{functions = Functions1}};
-
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+    {noreply, State#state{functions = Functions1}}.
 
 %% @doc We use this to capture refresh_functon requests when the parameter is an
 %%      anonymous fun
 handle_info({apply_refresh_function, FunctionIdentifier, Table, Key}, State) ->
-        apply_refresh_function(FunctionIdentifier, Table, Key),
-        {noreply, State};
+    apply_refresh_function(FunctionIdentifier, Table, Key),
+    {noreply, State};
 
-handle_info(_Info, State) ->
-    lager:debug("Info:~p~n", [_Info]),
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->
@@ -224,8 +216,6 @@ reset_cache_internal() ->
     %% using the table's time-to-live as the timer interval.
     {atomic, Metatables} = mnesia:transaction(fun() -> mnesia:match_object( #app_metatable{_ = '_'}) end ),
     lists:foldl(fun
-            (#app_metatable{table = _Table, refresh_function = undefined}, Acc) ->
-                Acc;
             (#app_metatable{table = _Table, refresh_function = #refresh_data{function_identifier = undefined}}, Acc) ->
                 Acc;
             (#app_metatable{table = Table, refresh_function = RefreshData}, Acc) ->
@@ -234,10 +224,7 @@ reset_cache_internal() ->
 
 
 %% @doc Add the refresh_function to the known set (if necessary)
--spec update_function_dict(table(), #refresh_data{} | undefined, any()) -> {ok, any()}.
-update_function_dict(Table, undefined, Functions) ->
-    remove_all_table_entries(Table),
-    {ok, Functions};
+-spec update_function_dict(table(), #refresh_data{}, any()) -> {ok, any()}.
 update_function_dict(Table, #refresh_data{function_identifier = undefined}, Functions) ->
     remove_all_table_entries(Table),
     {ok, Functions};
@@ -332,7 +319,7 @@ update_refresh_table(Type, RefreshData, Table, KeyList) ->
         end, KeyList).
 
 %% @doc If the key doesnt exist in the refresh table, add it
--spec update_key_in_refresh_table(#refresh_data{} | undefined, table(), table_key()) -> ok | error().
+-spec update_key_in_refresh_table(#refresh_data{} | undefined, table(), table_key()) -> ok | void.
 update_key_in_refresh_table(undefined, _Table, _Key) ->
     void;
 update_key_in_refresh_table(RefreshData, Table, Key) ->
@@ -352,7 +339,8 @@ update_key_in_refresh_table(RefreshData, Table, Key) ->
                     void
             end
     end,
-    mnesia:transaction(UpdateFun).
+    {atomic, Res} = mnesia:transaction(UpdateFun),
+    Res.
 
 %% @doc Return the TTL in seconds (or infinity!)
 -spec get_ttl_in_seconds(time_to_live()) -> time_to_live().

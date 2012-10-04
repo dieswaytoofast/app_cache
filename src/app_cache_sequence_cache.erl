@@ -112,27 +112,21 @@ handle_call({set_value, Key, Value}, _From, State) ->
 
 handle_call({delete, Key}, _From, State) ->
     Dict = State#state.sequences,
-    app_cache:remove_data(?SEQUENCE_TABLE, Key),
+    ok = app_cache:remove_data(?SEQUENCE_TABLE, Key),
     NewDict = dict:erase(Key, Dict),
     {reply, ok, State#state{sequences = NewDict}};
 
 handle_call({all_sequences}, _From, State) ->
     Dict = State#state.sequences,
-    {reply, dict:to_list(Dict), State};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    All = dict:fold(fun(_, V, Acc) -> [V | Acc] end, [], Dict),
+    {reply, All, State}.
 
 handle_cast({reset_cache}, _State) ->
     Dict = reset_cache_internal(),
-    {noreply, #state{sequences = Dict}};
+    {noreply, #state{sequences = Dict}}.
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->
@@ -157,7 +151,7 @@ update_upper_bound(Sequence) ->
     % sequence was incremeneted past the old value
     if NewUpperBound =< CachedValue ->
             FinalUpperBound = CachedValue + UpperBoundIncrement,
-            app_cache:sequence_init(Key, FinalUpperBound),
+            app_cache:sequence_create(Key, FinalUpperBound),
             Sequence#sequence_cache{cached_value = CachedValue,
                                   upper_bound = FinalUpperBound};
         true ->
@@ -174,7 +168,7 @@ get_sequence(Key, Dict) ->
             #sequence_cache{key = Key}
     end.
 
--spec initialize_cache(sequence_key(), sequence_value(), #state{}) -> any().
+-spec initialize_cache(sequence_key(), sequence_value(), #state{}) -> dict().
 initialize_cache(Key, Value, State) ->
     Dict = State#state.sequences,
     Sequence = get_sequence(Key, Dict),
@@ -182,11 +176,11 @@ initialize_cache(Key, Value, State) ->
     UpperBoundIncrement = Sequence#sequence_cache.upper_bound_increment,
     initialize_cache(Key, Value, Start, UpperBoundIncrement, State). 
 
--spec initialize_cache(sequence_key(), sequence_value(), sequence_value(), sequence_value(), #state{}) -> any().
+-spec initialize_cache(sequence_key(), sequence_value(), sequence_value(), sequence_value(), #state{}) -> dict().
 initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
     Dict = State#state.sequences,
-    app_cache:set_data(#sequence_table{key = Key,
-                                 value = Value}),
+    ok = app_cache:set_data(#sequence_table{key = Key,
+                                            value = Value}),
     app_cache:sequence_next_value(Key, UpperBoundIncrement),
     dict:store(Key, #sequence_cache{key = Key,
                                     start = Start,
@@ -195,9 +189,9 @@ initialize_cache(Key, Value, Start, UpperBoundIncrement, State) ->
                                     upper_bound = Value}, Dict).
         
 %% @doc return a Dict with all the data in the sequence table
--spec reset_cache_internal() -> any().
+-spec reset_cache_internal() -> dict().
 reset_cache_internal() ->
-    app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
+    ok = app_cache:cache_init([?SEQUENCE_TABLE_DEF]),
     Data = app_cache:get_all_data(?SEQUENCE_TABLE),
     lists:foldl(fun(#sequence_table{key = Key, value = Value}, _Acc) ->
                     UpperBoundIncrement = ?DEFAULT_CACHE_UPPER_BOUND_INCREMENT,

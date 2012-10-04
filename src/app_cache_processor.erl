@@ -91,31 +91,41 @@ start_link() ->
 start_link(Nodes) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Nodes], []).
 
--spec get_ttl_and_field_index(#app_metatable{}) -> {timestamp(), table_key_position()}.
+-spec get_ttl_and_field_index(#app_metatable{}) -> {time_to_live(), table_key_position()} | error().
 get_ttl_and_field_index(TableInfo) ->
     get_ttl_and_field_index_internal(TableInfo).
 
 % TODO make this dependant on the node
--spec upgrade_metatable() -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_metatable() -> ok | error().
 upgrade_metatable() ->
     upgrade_table(?METATABLE, app_cache:get_record_fields(?METATABLE)).
 
--spec upgrade_table(table()) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table()) -> ok | error().
 upgrade_table(Table) ->
     Fields = app_cache:table_fields(Table),
     upgrade_table(Table, Fields).
 
 
--spec upgrade_table(table(), [app_field()]) -> {atomic, ok} | {aborted, Reason :: any()}.
+-spec upgrade_table(table(), [app_field()]) -> ok | error().
 upgrade_table(Table, Fields) ->
     %% Replace 'ignore' with a function that performs the schema upgrade once the schema changes.
-    mnesia:transform_table(Table, ignore, Fields, Table).
+    case mnesia:transform_table(Table, ignore, Fields, Table) of
+        {atomic, ok} ->
+            ok;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec upgrade_table(table(), OldVersion :: non_neg_integer(), NewVersion :: non_neg_integer(), [app_field()]) ->
-                           {atomic, ok} | {aborted, Reason :: any()}.
+                           ok | error().
 upgrade_table(Table, _OldVersion, _NewVersion, Fields) ->
     %% Replace 'ignore' with a function that performs the schema upgrade once the schema changes.
-    mnesia:transform_table(Table, ignore, Fields, Table).
+    case mnesia:transform_table(Table, ignore, Fields, Table) of
+        {atomic, ok} ->
+            ok;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec get_functions(table()) -> #data_functions{} | undefined.
 get_functions(Table) ->
@@ -136,7 +146,7 @@ table_info(Table) ->
 init([Nodes]) ->
     process_flag(trap_exit, true),
     try
-        init_metatable_internal(Nodes),
+        ok = init_metatable_internal(Nodes),
         Tables = load_metatable_internal(),
         {ok, #state{tables = Tables}}
     catch
@@ -248,18 +258,14 @@ handle_call({table_fields, Table}, _From, State) ->
 handle_call({update_table_time_to_live, Table, TTL}, _From, State) ->
     update_table_time_to_live_internal(Table, TTL),
     Tables = load_metatable_internal(),
-    {reply, Tables, State#state{tables = Tables}};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    {reply, Tables, State#state{tables = Tables}}.
 
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast(Msg, State) ->
+    {stop, {unhandled_cast, Msg}, State}.
 
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(Info, State) ->
+    {stop, {unhandled_info, Info}, State}.
 
 
 terminate(_Reason, _State) ->
@@ -276,7 +282,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec create_metatable([node()]) -> ok | {aborted, Reason :: any()}.
+-spec create_metatable([node()]) -> ok.
 create_metatable(Nodes) ->
     case mnesia:create_table(?METATABLE, [{access_mode, read_write},
                                                {record_name, ?METATABLE},
@@ -305,19 +311,18 @@ init_metatable_internal(Nodes) ->
             create_metatable(Nodes)
     end.
 
--spec load_metatable_internal() -> ok | {aborted, Reason :: any()}.
+-spec load_metatable_internal() -> [#app_metatable{}].
 load_metatable_internal() ->
     {atomic, Data} = mnesia:transaction(fun() -> 
                     mnesia:match_object(#app_metatable{_ = '_'}) end),
     Data.
 
--spec cache_init_internal([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec cache_init_internal([node()], [#app_metatable{}]) -> ok | error().
 cache_init_internal(Nodes, Tables) ->
     try
         lists:foreach(fun(#app_metatable{table = Table}) -> 
                            init_table_internal(Table, Nodes, Tables)
-                  end, Tables),
-        Tables
+                  end, Tables)
     catch
         _:Error ->
             lager:error("Error ~p initializing mnesia.  Did you forget to run ~p:setup()?~n", [Error, ?SERVER]),
@@ -351,7 +356,7 @@ init_table_internal(Table, Nodes, Tables) ->
             create_table_internal(Table, Nodes, Tables)
     end.
 
--spec create_tables_internal([node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec create_tables_internal([node()], [#app_metatable{}]) -> ok.
 create_tables_internal(Nodes, Tables) ->
     create_metatable(Nodes),
     lists:foreach(fun(#app_metatable{table = Table}) ->
@@ -360,7 +365,7 @@ create_tables_internal(Nodes, Tables) ->
 
 
 
--spec create_table_internal(table(), [node()], [#app_metatable{}]) -> ok | {aborted, Reason :: any()}.
+-spec create_table_internal(table(), [node()], [#app_metatable{}]) -> ok.
 create_table_internal(Table, Nodes, Tables) ->
     #app_metatable{version = Version, 
                    time_to_live = TimeToLive, 
@@ -376,7 +381,7 @@ create_table_internal(Table, Nodes, Tables) ->
                                         {type, Type},
                                         {local_content, true}]),
     % Add secondary indexes
-    lists:map(fun(Field) ->
+    lists:foreach(fun(Field) ->
                 {atomic, ok} = mnesia:add_table_index(Table, Field)
         end, get_index_fields(TimeToLive, IndexFields)),
 
@@ -391,7 +396,8 @@ create_table_internal(Table, Nodes, Tables) ->
                     last_update = current_time_in_gregorian_seconds(),
                     reason = create_table
                     }) end,
-    {atomic, ok} = mnesia:transaction(WriteFun).
+    {atomic, ok} = mnesia:transaction(WriteFun),
+    ok.
 
 %% @doc Update the TTL for the given table in the metatable
 update_table_time_to_live_internal(Table, TimeToLive) ->
@@ -464,7 +470,7 @@ update_table_persist_function(Table, PersistData) ->
 %%
 %%  These don't use  mnesia
 %%
--spec get_functions_internal(#app_metatable{}) -> function() | undefined.
+-spec get_functions_internal(undefined | #app_metatable{}) -> #data_functions{}.
 get_functions_internal(undefined) ->
     #data_functions{};
 get_functions_internal(TableInfo) ->
@@ -477,7 +483,7 @@ get_functions_internal(TableInfo) ->
                     refresh_function = RefreshFunction,
                     persist_function = PersistFunction}.
 
--spec set_read_transform_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_read_transform_function(table(), function_identifier(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_read_transform_function(Table, Function, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -486,7 +492,7 @@ set_read_transform_function(Table, Function, Tables) ->
             {{error, {?INVALID_TABLE, Table}}, Tables}
     end.
 
--spec set_write_transform_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_write_transform_function(table(), function_identifier(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_write_transform_function(Table, Function, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -496,7 +502,7 @@ set_write_transform_function(Table, Function, Tables) ->
     end.
 
 
--spec set_refresh_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_refresh_function(table(), #refresh_data{}, [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_refresh_function(Table, Function, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -506,7 +512,7 @@ set_refresh_function(Table, Function, Tables) ->
     end.
 
 
--spec set_persist_function(table(), function(), [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
+-spec set_persist_function(table(), #persist_data{}, [#app_metatable{}]) -> {ok | error(), [#app_metatable{}]}.
 set_persist_function(Table, PersistData, Tables) ->
     case lists:keyfind(Table, #app_metatable.table, Tables) of
         Metatable when is_record(Metatable, app_metatable) ->
@@ -739,9 +745,6 @@ read_first_n_entries(TransactionType, Table, N) when N > 0 ->
 %%      Returns true if the update needs to happen *before* the read
 -spec refresh_if_necessary(#app_metatable{}, [table_key()]) -> boolean().
 refresh_if_necessary(#app_metatable{
-                refresh_function = undefined}, _Keys) -> 
-    false;
-refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     function_identifier = undefined}}, _Keys) -> 
     false;
@@ -749,13 +752,13 @@ refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     before_each_read = false,
                     after_each_read = false}} = TableInfo, Keys) -> 
-    app_cache_refresher:refresh_data(async, TableInfo#app_metatable.table, Keys),
+    ok = app_cache_refresher:refresh_data(async, TableInfo#app_metatable.table, Keys),
     false;
 refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     before_each_read = true,
                     after_each_read = false}} = TableInfo, Keys) -> 
-    app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
+    ok = app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
     true;
 % WARNING: HERE BE RACE CONDITIONS
 %           You could, theoretically, have the "after_read" happen before the
@@ -771,7 +774,7 @@ refresh_if_necessary(#app_metatable{
                 refresh_function = #refresh_data{
                     before_each_read = true,
                     after_each_read = true}} = TableInfo, Keys) -> 
-    app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
+    ok = app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys),
     proc_lib:spawn_link(fun() -> app_cache_refresher:refresh_data(sync, TableInfo#app_metatable.table, Keys) end),
     true.
 
@@ -813,10 +816,6 @@ write_data_overwriting_timestamp(TransactionType, Data) ->
 %%      with OverwriteTimestamp =:= true, this will delete any existing records w/ the same
 %%      key
 -spec persist_data(#data_functions{}, transaction_type(), boolean(), any(), any()) -> ok | error().
-persist_data(#data_functions{persist_function = undefined}, 
-             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
-    write_data_to_cache(TransactionType, OverwriteTimestamp, Data,
-                        ClearedTimestampData);
 persist_data(#data_functions{persist_function = 
                              #persist_data{function_identifier = undefined}}, 
              TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
@@ -836,10 +835,9 @@ persist_data(#data_functions{persist_function =
 persist_data(#data_functions{persist_function = #persist_data{synchronous = false, 
                                                               function_identifier
                                                               = FunctionIdentifier}}, TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
-    write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
-    proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end);
-persist_data(_, _TransactionType, _OverwriteTimestamp, _Data, _ClearedTimestampData) ->
-    {error, ?INVALID_PERSIST_FUNCTION}.
+    ok = write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
+    _Pid = proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end),
+    ok.
 
 % This one presumes that there is only one record w/ the given key (i.e., not a
 % bag)
@@ -859,11 +857,11 @@ roll_back_write(TransactionType, _OverwriteTimestamp = true, Record) ->
 %%%
 
 %% Increments
--spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
+-spec increment_data(transaction_type(), Table::table(), Key::table_key(), Value::sequence_value()) -> sequence_value() | error().
 increment_data(_TransactionType, Table, Key, Value) ->
     increment_data(Table, Key, Value).
 
--spec increment_data(Table::table(), Key::table_key(), Value::sequence_value) -> ok | error().
+-spec increment_data(Table::table(), Key::table_key(), Value::sequence_value()) -> sequence_value() | error().
 increment_data(Table, Key, Value) ->
     mnesia:dirty_update_counter(Table, Key, Value).
 
@@ -1176,8 +1174,8 @@ cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
             {error, {Reason, MData}}
     end.
 
--spec get_ttl_and_field_index_internal(#app_metatable{}) -> time_to_live().
-get_ttl_and_field_index_internal(TableInfo) -> 
+-spec get_ttl_and_field_index_internal(#app_metatable{}) -> {time_to_live(), table_key_position() | undefined} | error().
+get_ttl_and_field_index_internal(TableInfo) ->
     try
         #app_metatable{time_to_live = TTL, fields = Fields} = TableInfo,
         FieldIndex = get_index(?TIMESTAMP, Fields),
@@ -1188,13 +1186,10 @@ get_ttl_and_field_index_internal(TableInfo) ->
     end.
 
 
--spec is_cache_valid(timestamp() | ?INFINITY, last_update() | ?DEFAULT_TIMESTAMP, timestamp()) -> boolean().
+-spec is_cache_valid(timestamp(), last_update() | ?DEFAULT_TIMESTAMP, timestamp()) -> boolean().
 is_cache_valid(_TableTTL, ?DEFAULT_TIMESTAMP, _CurrentTime) ->
     %% There is no timestamp, so the data is not valid
     false;
-is_cache_valid(?INFINITY, _LastUpdate, _CurrentTime) ->
-    %% The table has in infinite TTL
-    true;
 is_cache_valid(TableTTL, LastUpdate, CurrentTime) ->
     LastUpdate + TableTTL > CurrentTime.
 
@@ -1258,7 +1253,7 @@ update_tables_with_table_info(TableInfo, Tables) ->
     end.
 
 %% @doc If there is a timestamp field in this record, set it to the current time
--spec get_timestamped_data(undefined | table_key_position(), any()) -> any().
+-spec get_timestamped_data(undefined | table_key_position(), tuple()) -> tuple().
 get_timestamped_data(undefined, Data) ->
     Data;
 get_timestamped_data(TTLFieldIndex, Data) ->
@@ -1268,7 +1263,7 @@ get_timestamped_data(TTLFieldIndex, Data) ->
 
 %% @doc If there is a timestamp field in this record, and it is 'undefined', set
 %%      '_' (for use in a matchspec)
--spec clear_timestamp_if_unset(undefined | table_key_position(), any()) -> any().
+-spec clear_timestamp_if_unset(undefined | table_key_position(), tuple()) -> tuple().
 clear_timestamp_if_unset(undefined, Data) ->
     Data;
 clear_timestamp_if_unset(TTLFieldIndex, Data) ->
@@ -1280,7 +1275,7 @@ clear_timestamp_if_unset(TTLFieldIndex, Data) ->
     end.
 
 %% @doc If there is a timestamp field in this record,set it to '_' (for use in a matchspec)
--spec clear_timestamp_if_exists(any()) -> any().
+-spec clear_timestamp_if_exists(tuple()) -> tuple().
 clear_timestamp_if_exists(Record) ->
     Table = element(1, Record),
     TableInfo = table_info(Table),
@@ -1291,7 +1286,7 @@ clear_timestamp_if_exists(Record) ->
             clear_timestamp_if_exists(TTLFieldIndex, Record)
     end.
 
--spec clear_timestamp_if_exists(undefined | table_key_position(), any()) -> any().
+-spec clear_timestamp_if_exists(undefined | table_key_position(), tuple()) -> tuple().
 clear_timestamp_if_exists(undefined, Data) ->
     Data;
 clear_timestamp_if_exists(TTLFieldIndex, Data) ->
@@ -1327,20 +1322,17 @@ read_transform_data(#data_functions{read_transform_function = FunctionIdentifier
 
 %% @doc Apply a given function to the record. This should be transparent, i.e., the
 %%      output should be something recognizable as the same record
--spec transform_data(function() | undefined, any()) -> any().
+-spec transform_data(function_identifier() | undefined, any()) -> any().
 transform_data(undefined, Data) -> Data;
 transform_data({module_and_function, {Module, Function}}, Data) -> 
     erlang:apply(Module, Function, [Data]);
 transform_data({function, Function}, Data) ->
-    Function(Data);
-transform_data(_Other, Data) -> Data.
+    Function(Data).
 
 
 %% @doc Get the keys (first item in the tuple)
 %%      Note: duplicates are eliminated
--spec get_data_keys([tuple()] | undefined) -> [table_key()].
-get_data_keys(undefined) ->
-    [];
+-spec get_data_keys([tuple()]) -> [table_key()].
 get_data_keys(Data) ->
     lists:usort([element(1, Item) || Item <- Data]).
 
@@ -1357,7 +1349,7 @@ validate_function_identifier(_) ->
     false.
 
 %% @doc Remove the refresher entry if there are no more keys
--spec delete_refresher_if_necessary(transaction_type(), table(), table_key()) -> ok.
+-spec delete_refresher_if_necessary(transaction_type(), table(), table_key()) -> ok | error().
 delete_refresher_if_necessary(TransactionType, Table, Key) ->
     case check_key_exists(TransactionType, Table, Key) of
         false ->
