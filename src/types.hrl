@@ -23,7 +23,7 @@
 -type sequence_key()    :: any().
 -type sequence_value()  :: non_neg_integer().
 
--type function_identifier() :: {function, function()} | 
+-type function_identifier() :: {function, fun((any()) -> any())} |
                                {module_and_function, {atom(), atom()}} |
                                undefined.
 

@@ -139,7 +139,7 @@ Create
 Creating tables consists of calling ```app_cache:cache_init/1``` with a list of ```#app_metatable{}``` records as the argument up a record of the form described in **DETAILS** above and call **app_cache:cache_init/1** with it as an argument. e.g
 
 ```erlang
-app_cache:cache_init([]#app_metatable{
+app_cache:cache_init([#app_metatable{
                 			table = foo_table_1,
                 				version = 1, 
                 				time_to_live = 60,
