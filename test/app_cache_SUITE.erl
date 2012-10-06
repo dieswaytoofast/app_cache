@@ -199,7 +199,7 @@ all() ->
 %%--------------------------------------------------------------------
 
 t_prop_sequence_create(_) ->
-    ?PROPTEST(prop_sequence_create).    
+    ?PROPTEST(prop_sequence_create).
 
 prop_sequence_create() ->
     ?FORALL({Key, Start}, {any(), sequence_value()},
