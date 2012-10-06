@@ -65,7 +65,7 @@
 -define(RECORD4, {test_table_1, ?KEY4, undefined, ?VALUE4, ?NAME4}).
 
 suite() ->
-    [{timetrap,{minutes,1}}].
+    [{ct_hooks,[cth_surefire]}, {timetrap,{minutes,1}}].
 
 init_per_suite(Config) ->
     Config.
@@ -199,7 +199,7 @@ all() ->
 %%--------------------------------------------------------------------
 
 t_prop_sequence_create(_) ->
-    ?PROPTEST(prop_sequence_create).    
+    ?PROPTEST(prop_sequence_create).
 
 prop_sequence_create() ->
     ?FORALL({Key, Start}, {any(), sequence_value()},
