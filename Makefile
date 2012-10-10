@@ -29,7 +29,7 @@ distclean:
 dialyze: compile
 	@dialyzer -r src -r deps
 
-test:
+test: compile
 	@rebar skip_deps=true ct verbose=1
 
 console:
