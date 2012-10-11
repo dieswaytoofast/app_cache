@@ -28,7 +28,7 @@ distclean:
 	@rebar delete-deps
 
 build-plt:
-	@dialyzer --build_plt --apps kernel stdlib sasl crypto ssl inets tools xmerl runtime_tools compiler syntax_tools mnesia
+	@dialyzer --build_plt --apps kernel stdlib sasl crypto ssl inets tools xmerl runtime_tools compiler syntax_tools mnesia public_key
 
 dialyze: compile
 	@dialyzer -r ebin -r deps/*/ebin -Wno_undefined_callbacks
