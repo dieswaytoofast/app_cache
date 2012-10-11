@@ -28,10 +28,10 @@ distclean:
 	@rebar delete-deps
 
 build-plt:
-	@dialyzer --build_plt --output_plt .app_cache_plt --apps kernel stdlib sasl crypto ssl inets tools xmerl runtime_tools compiler syntax_tools
+	@dialyzer --build_plt --apps kernel stdlib sasl crypto ssl inets tools xmerl runtime_tools compiler syntax_tools mnesia
 
 dialyze: compile
-	@dialyzer --plt .app_cache_plt -r ebin -r deps/*/ebin -Wno_undefined_callbacks
+	@dialyzer -r ebin -r deps/*/ebin -Wno_undefined_callbacks
 
 test: compile
 	@rebar skip_deps=true ct verbose=1
