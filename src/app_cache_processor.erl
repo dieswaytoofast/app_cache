@@ -129,7 +129,7 @@ upgrade_table(Table, _OldVersion, _NewVersion, Fields) ->
 
 -spec get_functions(table()) -> #data_functions{} | undefined.
 get_functions(Table) ->
-    gen_server:call(?SERVER, {get_functiosn, Table}).
+    gen_server:call(?SERVER, {get_functions, Table}).
 
 -spec table_fields(table()) -> table_fields().
 table_fields(Table) ->
