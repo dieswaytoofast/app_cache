@@ -25,7 +25,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0, 
+-export([start_link/0,
          refresh_data/3,
          remove_function/1,
          reset_function/1]).
@@ -96,7 +96,7 @@ clear_table(Table) ->
 
 
 
-%% @doc Reset the cache 
+%% @doc Reset the cache
 -spec reset_cache() -> ok.
 reset_cache() ->
     gen_server:cast(?SERVER, {reset_cache}).
@@ -124,7 +124,7 @@ init([]) ->
 
 handle_call({refresh_data, Table, KeyList}, _From, State) ->
     case dict:find(Table, State#state.functions) of
-        {ok, RefreshData} -> 
+        {ok, RefreshData} ->
             ok = update_refresh_table(sync, RefreshData, Table, KeyList);
         error ->
             Error = {{error, {invalid_table, Table}}, State#state.functions},
@@ -133,7 +133,7 @@ handle_call({refresh_data, Table, KeyList}, _From, State) ->
     {reply, ok, State};
 
 handle_call({remove_key, Table, Key}, _From, #state{functions = Functions} = State) ->
-    Response = 
+    Response =
     case dict:is_key(Table, Functions) of
         true ->
             ok = remove_entry_from_table(Table, Key);
@@ -152,10 +152,10 @@ handle_cast({clear_table, Table}, #state{functions = Functions} = State) ->
     {noreply, State};
 
 handle_cast({remove_function, Table}, #state{functions = Functions} = State) ->
-    NewFunctions = 
+    NewFunctions =
     case dict:find(Table, Functions) of
-        {ok, _RefreshData} -> 
-            dict:erase(Table, Functions); 
+        {ok, _RefreshData} ->
+            dict:erase(Table, Functions);
         error ->
             Functions
     end,
@@ -164,7 +164,7 @@ handle_cast({remove_function, Table}, #state{functions = Functions} = State) ->
 
 handle_cast({refresh_data, Table, KeyList}, State) ->
     case dict:find(Table, State#state.functions) of
-        {ok, RefreshData} -> 
+        {ok, RefreshData} ->
             ok = update_refresh_table(async, RefreshData, Table, KeyList);
         error ->
             Error = {{error, {invalid_table, Table}}, State#state.functions},
@@ -184,7 +184,7 @@ handle_cast({reset_function, Table}, #state{functions = Functions} = State) ->
         _ ->
             remove_all_table_entries(Table),
             {{error, {invalid_table, Table}}, Functions}
-    end, 
+    end,
     {noreply, State#state{functions = Functions1}}.
 
 %% @doc We use this to capture refresh_functon requests when the parameter is an
@@ -228,7 +228,7 @@ reset_cache_internal() ->
 update_function_dict(Table, #refresh_data{function_identifier = undefined}, Functions) ->
     remove_all_table_entries(Table),
     {ok, Functions};
-update_function_dict(Table, RefreshData, Functions) -> 
+update_function_dict(Table, RefreshData, Functions) ->
     remove_all_table_entries(Table),
     store_function_dict(Table, RefreshData, Functions).
 
@@ -259,7 +259,7 @@ remove_all_table_entries(Table) ->
     MatchHead = #refresh_table{key = {Table, '$1'}, timer = '$2', _ = '_'},
     Guard =  [],
     Result = [{{'$1', '$2'}}],
-    DeleteFun = fun() -> 
+    DeleteFun = fun() ->
             KeyList = mnesia:select(?REFRESH_TABLE, [{MatchHead, Guard, Result}]),
             lists:foreach(fun({Key, Timer}) ->
                         timer2:cancel(Timer),
@@ -289,13 +289,13 @@ reset_table_entries(Functions) ->
 %% @doc Get the tables that are do not have refresh functions
 -spec get_invalid_tables([table()], function_dict()) -> [table()].
 get_invalid_tables(TableList, Functions) ->
-    lists:filter(fun(Table) -> 
+    lists:filter(fun(Table) ->
                 dict:is_key(Table, Functions) end, TableList).
-       
+
 %% @doc Get all the unique tables in the set of keys that need to be refreshed
 -spec get_unique_tables() -> [table()] | error().
 get_unique_tables() ->
-    QH = qlc:q([Table || #refresh_table{key = {Table, _}} <- 
+    QH = qlc:q([Table || #refresh_table{key = {Table, _}} <-
                 mnesia:table(?REFRESH_TABLE)], {unique, true}),
     TableFun = fun() -> qlc:eval(QH) end,
     case mnesia:transaction(TableFun) of
@@ -334,7 +334,7 @@ update_key_in_refresh_table(RefreshData, Table, Key) ->
                             key = {Table, Key},
                             time_to_live = TTL,
                             last_update = app_cache:current_time_in_gregorian_seconds(),
-                            timer = TimerRef}); 
+                            timer = TimerRef});
                 _ ->
                     void
             end
@@ -361,7 +361,7 @@ get_timer_for_data(_TTL, _Other, _Table, _Key) ->
     {ok, undefined}.
 
 %% @doc Run the refresh function on the key in the table
--spec apply_refresh_function(#refresh_data{} | function_identifier() | undefined, 
+-spec apply_refresh_function(#refresh_data{} | function_identifier() | undefined,
                              table(), table_key()) -> ok | error().
 apply_refresh_function(undefined, _Table, _Key) ->
     void;

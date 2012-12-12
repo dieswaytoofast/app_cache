@@ -3,6 +3,7 @@ APPLICATION := app_cache
 ERL := erl
 EPATH := -pa ebin -pz deps/*/ebin
 TEST_EPATH := -pa .eunit -pz deps/*/ebin 
+PLT = .app_cache_plt
 
 .PHONY: all doc clean test
 
@@ -26,10 +27,13 @@ depclean:
 distclean:
 	@rebar delete-deps
 
-dialyze: compile
-	@dialyzer -r src -r deps
+build-plt:
+	@dialyzer --build_plt --apps kernel stdlib sasl crypto ssl inets tools xmerl runtime_tools compiler syntax_tools mnesia public_key
 
-test:
+dialyze: compile
+	@dialyzer -r ebin -r deps/*/ebin -Wno_undefined_callbacks
+
+test: compile
 	@rebar skip_deps=true ct verbose=1
 
 console:
