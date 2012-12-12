@@ -65,7 +65,7 @@
 -define(RECORD4, {test_table_1, ?KEY4, undefined, ?VALUE4, ?NAME4}).
 
 suite() ->
-    [{timetrap,{minutes,1}}].
+    [{ct_hooks,[cth_surefire]}, {timetrap,{minutes,1}}].
 
 init_per_suite(Config) ->
     Config.
@@ -155,6 +155,7 @@ groups() ->
       t_set_data_with_refresh_fun5,
       t_set_refresh_function_bad,
       t_set_persist_function_bad,
+      t_get_functions,
       t_get_data,
       t_get_data_dirty,
       t_get_data_with_transform_fun,
@@ -199,7 +200,7 @@ all() ->
 %%--------------------------------------------------------------------
 
 t_prop_sequence_create(_) ->
-    ?PROPTEST(prop_sequence_create).    
+    ?PROPTEST(prop_sequence_create).
 
 prop_sequence_create() ->
     ?FORALL({Key, Start}, {any(), sequence_value()},
@@ -520,6 +521,23 @@ t_set_refresh_function_bad(_) ->
 t_set_persist_function_bad(_) ->
     Res = app_cache:set_persist_function(?TEST_TABLE_1, bad_function),
     Res = {error, {?INVALID_PERSIST_FUNCTION, {?TEST_TABLE_1, bad_function}}}.
+
+t_get_functions(_) ->
+    ReadTransformFun = WriteTransformFun = {function, fun transform_fun/1},
+    RefreshData = #refresh_data{before_each_read = true,
+                               after_each_read = false,
+                               refresh_interval = ?INFINITY,
+                               function_identifier = {module_and_function, {app_cache_refresher, double_value}}},
+    PersistData = #persist_data{synchronous = true,
+                                function_identifier = {function, fun transform_fun/1}},
+    app_cache:set_read_transform_function(?TEST_TABLE_1, ReadTransformFun),
+    app_cache:set_write_transform_function(?TEST_TABLE_1, WriteTransformFun),
+    app_cache:set_refresh_function(?TEST_TABLE_1, RefreshData),
+    app_cache:set_persist_function(?TEST_TABLE_1, PersistData),
+    #data_functions{read_transform_function = ReadTransformFun,
+                   write_transform_function = WriteTransformFun,
+                   refresh_function = RefreshData,
+                   persist_function = PersistData} = app_cache_processor:get_functions(?TEST_TABLE_1).
 
 t_get_data(_) ->
     ok = app_cache:set_data(?RECORD),

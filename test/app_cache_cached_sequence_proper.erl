@@ -2,7 +2,6 @@
 
 -include("../src/defaults.hrl").
 -include_lib("proper/include/proper.hrl").
--include_lib("eunit/include/eunit.hrl").
 -behaviour(proper_statem).
 
 -export([command/1, initial_state/0, next_state/3, postcondition/3,

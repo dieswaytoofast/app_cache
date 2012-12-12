@@ -5,12 +5,13 @@ erl_crash.dump
 .eunit/log
 .eunit/cover.log
 .eunit/*.xml
+deps/dynarec
 deps/edown
 deps/gen_leader
 deps/gproc
 deps/lager
-deps/timer2
 deps/proper
+deps/timer2
 ebin/*.app
 ebin/*.beam
 log/*.log
