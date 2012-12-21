@@ -49,7 +49,7 @@
          get_last_n_entries/2, get_first_n_entries/2,
          get_records/1,
          get_after/2,
-         set_data/1, set_data_overwriting_timestamp/1,
+         set_data/1, set_data_overwriting_timestamp/1, set_data_if_unique/1,
          remove_data/2, remove_all_data/1,
          remove_record/1, remove_record_ignoring_timestamp/1]).
 -export([key_exists/3,
@@ -57,7 +57,7 @@
          get_data_by_last_key/2, get_data_by_first_key/2,
          get_records/2,
          get_after/3,
-         set_data/2,set_data_overwriting_timestamp/2,
+         set_data/2,set_data_overwriting_timestamp/2, set_data_if_unique/2,
          get_last_n_entries/3, get_first_n_entries/3,
          remove_data/3, remove_all_data/2,
          remove_record/2, remove_record_ignoring_timestamp/2]).
@@ -368,6 +368,17 @@ set_data_overwriting_timestamp(Value) ->
 %% @end
 set_data_overwriting_timestamp(TransactionType, Value) ->
     app_cache_processor:write_data_overwriting_timestamp(TransactionType, Value).
+
+-spec set_data_if_unique(Value::tuple()) -> ok | error().
+%% @equiv set_data_if_unique(safe, Value)
+set_data_if_unique(Value) ->
+    set_data_if_unique(?TRANSACTION_TYPE_SAFE, Value).
+
+-spec set_data_if_unique(transaction_type(), Value::tuple()) -> ok | error().
+%% @doc Write this entry only if the key doesn't exist
+%% @end
+set_data_if_unique(TransactionType, Value) ->
+    app_cache_processor:write_data_if_unique(TransactionType, Value).
 
 -spec remove_data(Table::table(), Key::table_key()) -> ok | error().
 %% @equiv remove_data(safe, Table, Key)

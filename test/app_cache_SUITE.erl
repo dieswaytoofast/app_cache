@@ -129,6 +129,10 @@ groups() ->
       t_init_metatable_nodes,
       t_get_metatable]},
 
+    {crud2, [],
+      [t_set_data_if_unique,
+       t_set_data_if_unique_dirty]},
+
     {crud, [],
      [t_table_info,
       t_table_version,
@@ -164,6 +168,8 @@ groups() ->
       t_get_bag_data_dirty,
       t_set_data_overwriting_timestamp,
       t_set_data_overwriting_timestamp_dirty,
+      t_set_data_if_unique,
+      t_set_data_if_unique_dirty,
       t_get_data_from_index,
       t_get_data_from_index_dirty,
       t_get_last_entered_data,
@@ -592,6 +598,24 @@ t_set_data_overwriting_timestamp_dirty(_) ->
     [Data] = app_cache:get_data(?TEST_TABLE_2, ?KEY),
     {?KEY, ?VALUE, ?NAME} =
         {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name}.
+
+t_set_data_if_unique(_) ->
+    ok = app_cache:remove_data(safe, ?TEST_TABLE_2, ?KEY),
+    ok = app_cache:set_data_if_unique(?RECORD30),
+    [Data1] = app_cache:get_data(?TEST_TABLE_2, ?KEY),
+    {?KEY, ?VALUE, ?NAME} =
+        {Data1#test_table_2.key, Data1#test_table_2.value, Data1#test_table_2.name},
+    {error, {item_already_exists, _}} = app_cache:set_data_if_unique(?RECORD30),
+    {error, {key_already_exists, _}} = app_cache:set_data_if_unique(?RECORD31).
+
+t_set_data_if_unique_dirty(_) ->
+    ok = app_cache:remove_data(safe, ?TEST_TABLE_2, ?KEY),
+    ok = app_cache:set_data_if_unique(dirty, ?RECORD30),
+    [Data] = app_cache:get_data(?TEST_TABLE_2, ?KEY),
+    {?KEY, ?VALUE, ?NAME} =
+        {Data#test_table_2.key, Data#test_table_2.value, Data#test_table_2.name},
+    {error, {item_already_exists, _}} = app_cache:set_data_if_unique(dirty, ?RECORD30),
+    {error, {key_already_exists, _}} = app_cache:set_data_if_unique(dirty, ?RECORD31).
 
 t_get_data_from_index(_) ->
     ok = app_cache:set_data(?RECORD),
