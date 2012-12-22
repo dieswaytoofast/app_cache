@@ -6,6 +6,8 @@
   {applications, [
                   kernel,
                   stdlib,
+                  compiler,
+                  syntax_tools,
                   sasl,
                   mnesia,
                   timer2,

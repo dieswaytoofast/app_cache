@@ -833,7 +833,7 @@ write_data_if_unique(TransactionType, Data) ->
 %% @doc persist the data to mnesia (and maybe somewhere else?)
 %%      with OverwriteTimestamp =:= true, this will delete any existing records w/ the same
 %%      key
--spec persist_data(#data_functions{}, transaction_type(), boolean(), boolean(), undefined|table_key_position(), any(), any()) -> ok | error().
+-spec persist_data(#data_functions{}, transaction_type(), OverwriteTimestamp::boolean(), OnlyIfUnique::boolean(), undefined|table_key_position(), Data::any(), ClearedTimestampData::any()) -> ok | error().
 persist_data(#data_functions{persist_function = 
                              #persist_data{function_identifier = undefined}}, 
              TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData) ->
@@ -885,7 +885,7 @@ increment_data(Table, Key, Value) ->
 
 
 %% Writes
--spec write_data_to_cache(transaction_type(), boolean(), boolean(), undefined|table_key_position(), any(), any()) -> ok | error().
+-spec write_data_to_cache(transaction_type(), OverWriteTimestamp::boolean(), OnlyIfUnique::boolean(), undefined|table_key_position(), Data::any(), ClearedTimestampData::any()) -> ok | error().
 write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp, _OnlyIfUnique = true, TTLFieldIndex, Data, ClearedTimestampData) -> 
     Table = element(1, Data),
     Key = element(2, Data),
@@ -959,7 +959,7 @@ write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = true, _OnlyIf
     [mnesia:dirty_delete_object(Record) || Record <- Records],
     % And write the new data
     mnesia:dirty_write(Data);
-write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = false, _OnlyIfUnique, _TTLFieldIndex, Data, _ClearedTimestampData) -> 
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp, _OnlyIfUnique, _TTLFieldIndex, Data, _ClearedTimestampData) -> 
     mnesia:dirty_write(Data).
 
 
