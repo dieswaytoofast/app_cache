@@ -130,8 +130,8 @@ groups() ->
       t_get_metatable]},
 
     {crud2, [],
-      [t_set_data_if_unique,
-       t_set_data_if_unique_dirty]},
+      [t_delete_data,
+       t_delete_data_dirty]},
 
     {crud, [],
      [t_table_info,
@@ -200,6 +200,7 @@ all() ->
      {group, start_with_schema},
      {group, crud},
      t_app_cache_last_update_to_datetime_test].
+%    [{group, crud2}].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -692,12 +693,28 @@ t_key_exists_dirty(_) ->
 t_delete_data(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:remove_data(safe, ?TEST_TABLE_1, ?KEY),
-    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:remove_data(safe, ?TEST_TABLE_1, [?KEY]),
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    ok = app_cache:remove_data(safe, ?TEST_TABLE_1, [?KEY, ?KEY2]),
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY2).
 
 t_delete_data_dirty(_) ->
     ok = app_cache:set_data(?RECORD),
     ok = app_cache:remove_data(dirty, ?TEST_TABLE_1, ?KEY),
-    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY).
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:remove_data(dirty, ?TEST_TABLE_1, [?KEY]),
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    ok = app_cache:set_data(?RECORD),
+    ok = app_cache:set_data(?RECORD2),
+    ok = app_cache:remove_data(dirty, ?TEST_TABLE_1, [?KEY, ?KEY2]),
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY),
+    [] = app_cache:get_data(?TEST_TABLE_1, ?KEY2).
 
 t_delete_all_data(_) ->
     ok = app_cache:set_data(?RECORD),

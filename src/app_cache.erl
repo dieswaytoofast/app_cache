@@ -380,15 +380,19 @@ set_data_if_unique(Value) ->
 set_data_if_unique(TransactionType, Value) ->
     app_cache_processor:write_data_if_unique(TransactionType, Value).
 
--spec remove_data(Table::table(), Key::table_key()) -> ok | error().
+-spec remove_data(Table::table(), Key::table_key() | [table_key()]) -> ok | error().
 %% @equiv remove_data(safe, Table, Key)
+remove_data(Table, Keys) when is_list(Keys) ->
+    remove_data(?TRANSACTION_TYPE_SAFE, Table, Keys);
 remove_data(Table, Key) ->
-    remove_data(?TRANSACTION_TYPE_SAFE, Table, Key).
+    remove_data(?TRANSACTION_TYPE_SAFE, Table, [Key]).
 
--spec remove_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
-%% @doc Remove (all) the record(s) with key Key in Table
+-spec remove_data(transaction_type(), Table::table(), Key::table_key() | [table_key()]) -> ok | error().
+%% @doc Remove (all) the record(s) with key Key (or keys Keys) in Table
+remove_data(TransactionType, Table, Keys) when is_list(Keys) ->
+    app_cache_processor:delete_data(TransactionType, Table, Keys);
 remove_data(TransactionType, Table, Key) ->
-    app_cache_processor:delete_data(TransactionType, Table, Key).
+    remove_data(TransactionType, Table, [Key]).
 
 -spec remove_all_data(Table::table()) -> ok | error().
 %% @equiv remove_all_data(safe, Table)

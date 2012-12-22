@@ -294,7 +294,7 @@ create_metatable(Nodes) ->
         {atomic, ok} ->
             ok;
         Error ->
-            throw(Error)
+            mnesia:abort(Error)
     end.
 
 -spec init_metatable_internal([node()]) -> ok | {aborted, Reason :: any()}.
@@ -863,7 +863,7 @@ persist_data(#data_functions{persist_function = #persist_data{synchronous = fals
 roll_back_write(TransactionType, _OverwriteTimestamp = false, Record) ->
     Table = element(1, Record),
     Key = element(2, Record),
-    delete_data(TransactionType, Table, Key);
+    delete_data(TransactionType, Table, [Key]);
 % This one presumes that there are many records with the given key, i.e., a
 % bag)
 roll_back_write(TransactionType, _OverwriteTimestamp = true, Record) ->
@@ -964,29 +964,32 @@ write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = false, _OnlyI
 
 
 %% Deletes
--spec delete_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
-delete_data(?TRANSACTION_TYPE_SAFE, Table, Key) ->
+-spec delete_data(transaction_type(), Table::table(), Keys::[table_key()]) -> ok | error().
+delete_data(?TRANSACTION_TYPE_SAFE, Table, Keys) ->
     DeleteFun = fun () -> 
-            mnesia:delete({Table, Key}),
-            case app_cache_refresher:remove_key(Table, Key) of
-                ok ->
-                    ok;
-                Error ->
-                    throw(Error)
-            end
-    end,
+            lists:foreach(fun(Key) ->
+                        mnesia:delete({Table, Key}),
+                        case app_cache_refresher:remove_key(Table, Key) of
+                            ok -> ok;
+                            Error -> mnesia:abort(Error)
+                        end
+                end, Keys) end,
     case mnesia:transaction(DeleteFun) of
         {atomic, ok} ->
             ok;
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-delete_data(?TRANSACTION_TYPE_DIRTY, Table, Key) ->
-    case app_cache_refresher:remove_key(Table, Key) of
-        ok ->
-            mnesia:dirty_delete({Table, Key});
-        Error ->
-            Error
+delete_data(?TRANSACTION_TYPE_DIRTY, Table, Keys) ->
+    try
+        lists:foreach(fun(Key) ->
+                    case app_cache_refresher:remove_key(Table, Key) of
+                        ok -> mnesia:dirty_delete({Table, Key});
+                        Error -> throw(Error)
+                    end end, Keys) 
+    catch
+        _Case:Reason ->
+            Reason
     end.
 
 %% Deletes
@@ -1010,7 +1013,7 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = false
                 ok ->
                     ok;
                 Error ->
-                    throw(Error)
+                    mnesia:abort(Error)
             end
     end,
     case mnesia:transaction(DeleteFun) of
@@ -1037,7 +1040,7 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = true,
                 ok ->
                     ok;
                 Error ->
-                    throw(Error)
+                    mnesia:abort(Error)
             end
     end,
     case mnesia:transaction(DeleteFun) of
