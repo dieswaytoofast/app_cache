@@ -49,17 +49,17 @@
          get_last_n_entries/2, get_first_n_entries/2,
          get_records/1,
          get_after/2,
-         set_data/1, set_data_overwriting_timestamp/1,
-         remove_data/2, remove_all_data/1,
+         set_data/1, set_data_overwriting_timestamp/1, set_data_if_unique/1,
+         remove_data/2, remove_lots_of_data/2, remove_all_data/1,
          remove_record/1, remove_record_ignoring_timestamp/1]).
 -export([key_exists/3,
          get_data_from_index/4, get_data/3, get_all_data/2,
          get_data_by_last_key/2, get_data_by_first_key/2,
          get_records/2,
          get_after/3,
-         set_data/2,set_data_overwriting_timestamp/2,
+         set_data/2,set_data_overwriting_timestamp/2, set_data_if_unique/2,
          get_last_n_entries/3, get_first_n_entries/3,
-         remove_data/3, remove_all_data/2,
+         remove_data/3, remove_lots_of_data/3, remove_all_data/2,
          remove_record/2, remove_record_ignoring_timestamp/2]).
 
 -export([sequence_create/1, sequence_create/2,
@@ -369,15 +369,35 @@ set_data_overwriting_timestamp(Value) ->
 set_data_overwriting_timestamp(TransactionType, Value) ->
     app_cache_processor:write_data_overwriting_timestamp(TransactionType, Value).
 
+-spec set_data_if_unique(Value::tuple()) -> ok | error().
+%% @equiv set_data_if_unique(safe, Value)
+set_data_if_unique(Value) ->
+    set_data_if_unique(?TRANSACTION_TYPE_SAFE, Value).
+
+-spec set_data_if_unique(transaction_type(), Value::tuple()) -> ok | error().
+%% @doc Write this entry only if the key doesn't exist
+%% @end
+set_data_if_unique(TransactionType, Value) ->
+    app_cache_processor:write_data_if_unique(TransactionType, Value).
+
 -spec remove_data(Table::table(), Key::table_key()) -> ok | error().
 %% @equiv remove_data(safe, Table, Key)
 remove_data(Table, Key) ->
-    remove_data(?TRANSACTION_TYPE_SAFE, Table, Key).
+    remove_lots_of_data(?TRANSACTION_TYPE_SAFE, Table, [Key]).
 
 -spec remove_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
-%% @doc Remove (all) the record(s) with key Key in Table
+%% @doc Remove (all) the record(s) with key Key (or keys Keys) in Table
 remove_data(TransactionType, Table, Key) ->
-    app_cache_processor:delete_data(TransactionType, Table, Key).
+    remove_lots_of_data(TransactionType, Table, [Key]).
+
+-spec remove_lots_of_data(Table::table(), Key::[table_key()]) -> ok | error().
+%% @equiv remove_lots_of_data(safe, Table, Key)
+remove_lots_of_data(Table, Keys) when is_list(Keys) ->
+    remove_lots_of_data(?TRANSACTION_TYPE_SAFE, Table, Keys).
+
+-spec remove_lots_of_data(transaction_type(), Table::table(), Key::[table_key()]) -> ok | error().
+remove_lots_of_data(TransactionType, Table, Keys) when is_list(Keys) ->
+    app_cache_processor:delete_data(TransactionType, Table, Keys).
 
 -spec remove_all_data(Table::table()) -> ok | error().
 %% @equiv remove_all_data(safe, Table)

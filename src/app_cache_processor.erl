@@ -42,6 +42,7 @@
 -export([read_first_n_entries/3]).
 -export([write_data/2]).
 -export([write_data_overwriting_timestamp/2]).
+-export([write_data_if_unique/2]).
 -export([delete_data/3]).
 -export([delete_all_data/2]).
 -export([delete_record/3]).
@@ -293,7 +294,7 @@ create_metatable(Nodes) ->
         {atomic, ok} ->
             ok;
         Error ->
-            throw(Error)
+            mnesia:abort(Error)
     end.
 
 -spec init_metatable_internal([node()]) -> ok | {aborted, Reason :: any()}.
@@ -792,7 +793,7 @@ write_data(TransactionType, Data) ->
             TransformedData = write_transform_data(get_functions_internal(TableInfo), TimestampedData),
             persist_data(get_functions_internal(TableInfo), 
                          TransactionType, _OverwriteTimestamp = false, 
-                         TransformedData, _ClearedTimestampData = undefined)
+                         _OnlyIfUnique = false, TTLFieldIndex, TransformedData, _ClearedTimestampData = undefined)
     end.
 
 -spec write_data_overwriting_timestamp(transaction_type(), any()) -> ok | error().
@@ -809,23 +810,40 @@ write_data_overwriting_timestamp(TransactionType, Data) ->
             ClearedTimestampData = clear_timestamp_if_exists(TTLFieldIndex, TransformedData),
             persist_data(get_functions_internal(TableInfo), 
                          TransactionType, _OverwriteTimestamp = true, 
-                         TransformedData, ClearedTimestampData)
+                         _OnlyIfUnique = false, TTLFieldIndex, TransformedData, ClearedTimestampData)
+    end.
+
+-spec write_data_if_unique(transaction_type(), any()) -> ok | error().
+write_data_if_unique(TransactionType, Data) ->
+    Table = element(1, Data),
+    TableInfo = table_info(Table),
+    % return only the valid values
+    case get_ttl_and_field_index_internal(TableInfo) of
+        {error, _} = Error ->
+            Error;
+        {_, TTLFieldIndex} -> 
+            TimestampedData = get_timestamped_data(TTLFieldIndex, Data),
+            TransformedData = write_transform_data(get_functions_internal(TableInfo), TimestampedData),
+            ClearedTimestampData = clear_timestamp_if_exists(TTLFieldIndex, TransformedData),
+            persist_data(get_functions_internal(TableInfo), 
+                         TransactionType, _OverwriteTimestamp = false, 
+                         _OnlyIfUnique = true, TTLFieldIndex, TransformedData, ClearedTimestampData)
     end.
 
 %% @doc persist the data to mnesia (and maybe somewhere else?)
 %%      with OverwriteTimestamp =:= true, this will delete any existing records w/ the same
 %%      key
--spec persist_data(#data_functions{}, transaction_type(), boolean(), any(), any()) -> ok | error().
+-spec persist_data(#data_functions{}, transaction_type(), OverwriteTimestamp::boolean(), OnlyIfUnique::boolean(), undefined|table_key_position(), Data::any(), ClearedTimestampData::any()) -> ok | error().
 persist_data(#data_functions{persist_function = 
                              #persist_data{function_identifier = undefined}}, 
-             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
-    write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData);
+             TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData) ->
+    write_data_to_cache(TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData);
 persist_data(#data_functions{persist_function = 
                              #persist_data{synchronous = true, 
                                            function_identifier = FunctionIdentifier}}, 
-             TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
+             TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData) ->
     try
-        ok = write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
+        ok = write_data_to_cache(TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData),
         transform_data(FunctionIdentifier, Data)
     catch
         _:_ ->
@@ -834,8 +852,8 @@ persist_data(#data_functions{persist_function =
     end;
 persist_data(#data_functions{persist_function = #persist_data{synchronous = false, 
                                                               function_identifier
-                                                              = FunctionIdentifier}}, TransactionType, OverwriteTimestamp, Data, ClearedTimestampData) ->
-    ok = write_data_to_cache(TransactionType, OverwriteTimestamp, Data, ClearedTimestampData),
+                                                              = FunctionIdentifier}}, TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData) ->
+    ok = write_data_to_cache(TransactionType, OverwriteTimestamp, OnlyIfUnique, TTLFieldIndex, Data, ClearedTimestampData),
     _Pid = proc_lib:spawn_link(fun() -> transform_data(FunctionIdentifier, Data) end),
     ok.
 
@@ -845,7 +863,7 @@ persist_data(#data_functions{persist_function = #persist_data{synchronous = fals
 roll_back_write(TransactionType, _OverwriteTimestamp = false, Record) ->
     Table = element(1, Record),
     Key = element(2, Record),
-    delete_data(TransactionType, Table, Key);
+    delete_data(TransactionType, Table, [Key]);
 % This one presumes that there are many records with the given key, i.e., a
 % bag)
 roll_back_write(TransactionType, _OverwriteTimestamp = true, Record) ->
@@ -867,8 +885,40 @@ increment_data(Table, Key, Value) ->
 
 
 %% Writes
--spec write_data_to_cache(transaction_type(), boolean(), any(), any()) -> ok | error().
-write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = false, Data, _ClearedTimestampData) -> 
+-spec write_data_to_cache(transaction_type(), OverWriteTimestamp::boolean(), OnlyIfUnique::boolean(), undefined|table_key_position(), Data::any(), ClearedTimestampData::any()) -> ok | error().
+write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp, _OnlyIfUnique = true, TTLFieldIndex, Data, ClearedTimestampData) -> 
+    Table = element(1, Data),
+    Key = element(2, Data),
+    WriteFun = fun () -> case mnesia:wread({Table, Key})  of
+                [OutData] -> 
+                    case clear_timestamp_if_exists(TTLFieldIndex, OutData) of
+                        ClearedTimestampData -> mnesia:abort({item_already_exists, [Data]});
+                        OtherData -> mnesia:abort({key_already_exists, [OtherData]})
+                    end;
+                [] -> mnesia:write(Data)
+            end
+    end,
+
+    case mnesia:transaction(WriteFun) of
+        {atomic, ok} ->
+            ok;
+        {aborted, {Reason, MData}} ->
+            {error, {Reason, MData}}
+    end;
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp, _OnlyIfUnique = true, TTLFieldIndex, Data, ClearedTimestampData) -> 
+    Table = element(1, Data),
+    Key = element(2, Data),
+    case mnesia:dirty_read({Table, Key})  of
+        [OutData] -> 
+            case clear_timestamp_if_exists(TTLFieldIndex, OutData) of
+                ClearedTimestampData ->
+                    {error, {item_already_exists, [Data]}};
+                OtherData -> {error, {key_already_exists, [OtherData]}}
+            end;
+        [] -> mnesia:dirty_write(Data)
+    end;
+
+write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = false, _OnlyIfUnique, _TTLFieldIndex, Data, _ClearedTimestampData) -> 
     WriteFun = fun () -> mnesia:write(Data) end,
     case mnesia:transaction(WriteFun) of
         {atomic, ok} ->
@@ -876,7 +926,7 @@ write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = false, Data, _
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = true, Data, ClearedTimestampData) -> 
+write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = true, _OnlyIfUnique, _TTLFieldIndex, Data, ClearedTimestampData) -> 
     DataFun = fun () -> 
             % Get all the records that match when we ignore the timestamp
             Table = element(1, ClearedTimestampData),
@@ -896,7 +946,8 @@ write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = true, Data, Cl
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = true, Data, ClearedTimestampData) -> 
+
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = true, _OnlyIfUnique, _TTLFieldIndex, Data, ClearedTimestampData) -> 
     Table = element(1, ClearedTimestampData),
     Records = case mnesia:dirty_select(Table, [{ClearedTimestampData, [], ['$_']}]) of
         Result when is_list(Result) ->
@@ -908,34 +959,37 @@ write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = true, Data, C
     [mnesia:dirty_delete_object(Record) || Record <- Records],
     % And write the new data
     mnesia:dirty_write(Data);
-write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = false, Data, _ClearedTimestampData) -> 
+write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp, _OnlyIfUnique, _TTLFieldIndex, Data, _ClearedTimestampData) -> 
     mnesia:dirty_write(Data).
 
 
 %% Deletes
--spec delete_data(transaction_type(), Table::table(), Key::table_key()) -> ok | error().
-delete_data(?TRANSACTION_TYPE_SAFE, Table, Key) ->
+-spec delete_data(transaction_type(), Table::table(), Keys::[table_key()]) -> ok | error().
+delete_data(?TRANSACTION_TYPE_SAFE, Table, Keys) ->
     DeleteFun = fun () -> 
-            mnesia:delete({Table, Key}),
-            case app_cache_refresher:remove_key(Table, Key) of
-                ok ->
-                    ok;
-                Error ->
-                    throw(Error)
-            end
-    end,
+            lists:foreach(fun(Key) ->
+                        mnesia:delete({Table, Key}),
+                        case app_cache_refresher:remove_key(Table, Key) of
+                            ok -> ok;
+                            Error -> mnesia:abort(Error)
+                        end
+                end, Keys) end,
     case mnesia:transaction(DeleteFun) of
         {atomic, ok} ->
             ok;
         {aborted, {Reason, MData}} ->
             {error, {Reason, MData}}
     end;
-delete_data(?TRANSACTION_TYPE_DIRTY, Table, Key) ->
-    case app_cache_refresher:remove_key(Table, Key) of
-        ok ->
-            mnesia:dirty_delete({Table, Key});
-        Error ->
-            Error
+delete_data(?TRANSACTION_TYPE_DIRTY, Table, Keys) ->
+    try
+        lists:foreach(fun(Key) ->
+                    case app_cache_refresher:remove_key(Table, Key) of
+                        ok -> mnesia:dirty_delete({Table, Key});
+                        Error -> throw(Error)
+                    end end, Keys) 
+    catch
+        _Case:Reason ->
+            Reason
     end.
 
 %% Deletes
@@ -959,7 +1013,7 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = false
                 ok ->
                     ok;
                 Error ->
-                    throw(Error)
+                    mnesia:abort(Error)
             end
     end,
     case mnesia:transaction(DeleteFun) of
@@ -986,7 +1040,7 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = true,
                 ok ->
                     ok;
                 Error ->
-                    throw(Error)
+                    mnesia:abort(Error)
             end
     end,
     case mnesia:transaction(DeleteFun) of
