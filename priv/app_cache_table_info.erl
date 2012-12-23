@@ -24,7 +24,7 @@
 
 -type mt_table()                                   :: atom().
 -type mt_table_version()                           :: any().
--type mt_time_to_live()                            :: pos_integer().
+-type mt_time_to_live()                            :: pos_integer() | infinity.
 -type mt_table_type()                              :: set | ordered_set | bag.
 -type mt_table_key()                               :: atom().
 -type mt_secondary_index_fields()                  :: [mt_table_key()].
@@ -33,7 +33,7 @@
 -record(app_metatable, {
           table                                 :: mt_table(),
           version                               :: mt_table_version(),
-          time_to_live                          :: mt_time_to_live() | infinity,    %% in seconds
+          time_to_live                          :: mt_time_to_live(),    %% in seconds
           type                                  :: mt_table_type(),
           fields = []                           :: [mt_table_key()],
           secondary_index_fields = []           :: mt_secondary_index_fields(),
