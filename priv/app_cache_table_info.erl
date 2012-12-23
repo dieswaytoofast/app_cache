@@ -53,19 +53,19 @@
 %% ===================================================================
 
 %% @doc Create the default meta_information for a table
--spec table_info(mt_table()) -> [#app_metatable{}].
+-spec table_info(mt_table()) -> #app_metatable{}.
 table_info(RecordName) ->
     table_info(RecordName, ?DEFAULT_TYPE, ?DEFAULT_TTL, ?DEFAULT_SECONDARY_INDEX_FIELDS, ?DEFAULT_VERSION).
 
 %% @doc Create the default meta_information for a table 
 %%      of a given type
--spec table_info(mt_table(), mt_table_type()) -> [#app_metatable{}].
+-spec table_info(mt_table(), mt_table_type()) -> #app_metatable{}.
 table_info(RecordName, Type) ->
     table_info(RecordName, Type, ?DEFAULT_TTL, ?DEFAULT_SECONDARY_INDEX_FIELDS, ?DEFAULT_VERSION).
 
 %% @doc Create the default meta_information for a table 
 %%      with a given type and cache TTL
--spec table_info(mt_table(), mt_table_type(), mt_time_to_live()) -> [#app_metatable{}].
+-spec table_info(mt_table(), mt_table_type(), mt_time_to_live()) -> #app_metatable{}.
 table_info(RecordName, Type, TTL) ->
     table_info(RecordName, Type, TTL, ?DEFAULT_SECONDARY_INDEX_FIELDS, ?DEFAULT_VERSION).
 
@@ -73,7 +73,7 @@ table_info(RecordName, Type, TTL) ->
 %%      with a given type, cache TTL, and secondary indexes
 %%      on some fields
 -spec table_info(mt_table(), mt_table_type(), mt_time_to_live(), 
-                 mt_secondary_index_fields()) -> [#app_metatable{}].
+                 mt_secondary_index_fields()) -> #app_metatable{}.
 table_info(RecordName, Type, TTL, SecondaryIndexFields) ->
     table_info(RecordName, Type, TTL, SecondaryIndexFields, ?DEFAULT_VERSION).
 
@@ -81,7 +81,7 @@ table_info(RecordName, Type, TTL, SecondaryIndexFields) ->
 %%      with a given type, cache TTL, secondary indexes
 %%      on some fields, and a table version
 -spec table_info(mt_table(), mt_table_type(), mt_time_to_live(), 
-                 mt_secondary_index_fields(), mt_table_version()) -> [#app_metatable{}].
+                 mt_secondary_index_fields(), mt_table_version()) -> #app_metatable{}.
 table_info(RecordName, Type, TTL, SecondaryIndexFields, Version) ->
     validate_table(RecordName),
     validate_type(Type),
