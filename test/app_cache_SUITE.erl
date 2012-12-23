@@ -193,13 +193,13 @@ groups() ->
       t_cache_expiration]}].
 
 all() ->
-    [{group, sequence},
-     {group, cached_sequence},
-     {group, start_with_schema},
-     {group, start_with_schema},
-     {group, crud},
-     t_app_cache_last_update_to_datetime_test].
-%    [{group, sequence}].
+%    [{group, sequence},
+%     {group, cached_sequence},
+%     {group, start_with_schema},
+%     {group, start_with_schema},
+%     {group, crud},
+%     t_app_cache_last_update_to_datetime_test].
+    [{group, foo}].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -493,7 +493,7 @@ t_set_data_with_refresh_fun3(_) ->
     app_cache:set_data(safe, ?RECORD4),
     %% After, so each read has *not* been refreshed
     [#test_table_1{value = ?VALUE4}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
-    timer:sleep(10000),
+    timer:sleep(7000),
     [#test_table_1{value = Result}] = app_cache:get_data(?TEST_TABLE_1, ?KEY4),
     Result = ?VALUE4*2.
 
