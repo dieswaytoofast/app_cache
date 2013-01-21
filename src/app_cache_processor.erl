@@ -1222,6 +1222,8 @@ cache_select(?TRANSACTION_TYPE_DIRTY, Table, _After, MatchSpec) ->
 cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
     SelectFun = fun () -> mnesia:select(Table, MatchSpec, N, read) end,
     case mnesia:transaction(SelectFun) of
+        {atomic,'$end_of_table'} ->
+            [];
         {atomic, {Data, _}} ->
             Data;
         {aborted, {Reason, MData}} ->
