@@ -17,7 +17,6 @@
 -author('Tom Heinan <me@tomheinan.com>').
 
 
--compile([{parse_transform, lager_transform}]).
 
 -behaviour(gen_server).
 
@@ -38,8 +37,6 @@
 %% used to initialize the refresher table
 -export([reset_cache/0]).
 
-%% testing
--export([double_value/1]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -101,15 +98,6 @@ clear_table(Table) ->
 reset_cache() ->
     gen_server:cast(?SERVER, {reset_cache}).
 
-
-%% @doc Testing
-double_value(Key) ->
-    case mnesia:dirty_read(test_table_1, Key) of
-        [#test_table_1{value = X} = Entry] ->
-            Entry#test_table_1{value = 2*X};
-        _ ->
-            #test_table_1{key = Key, value = 1}
-    end.
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -262,7 +250,7 @@ remove_all_table_entries(Table) ->
     DeleteFun = fun() ->
             KeyList = mnesia:select(?REFRESH_TABLE, [{MatchHead, Guard, Result}]),
             lists:foreach(fun({Key, Timer}) ->
-                        timer2:cancel(Timer),
+                        timer:cancel(Timer),
                         % Remove the refresh_table entry
                         mnesia:delete({?REFRESH_TABLE, {Table, Key}})
                 end, KeyList)
@@ -354,9 +342,9 @@ get_ttl_in_seconds(TTL) ->
 get_timer_for_data(?INFINITY, _FunctionIdentifier, _Table, _Key) ->
     {ok, undefined};
 get_timer_for_data(TTL, {module_and_function, {_Module, _Function}} = FunctionIdentifier, Table, Key) ->
-    timer2:apply_interval(TTL, ?SERVER, apply_refresh_function, [FunctionIdentifier, Table, Key]);
+    timer:apply_interval(TTL, ?SERVER, apply_refresh_function, [FunctionIdentifier, Table, Key]);
 get_timer_for_data(TTL, {function, _Function} = FunctionIdentifier, Table, Key) ->
-    timer2:send_interval(TTL, {apply_refresh_function, FunctionIdentifier, Table, Key});
+    timer:send_interval(TTL, {apply_refresh_function, FunctionIdentifier, Table, Key});
 get_timer_for_data(_TTL, _Other, _Table, _Key) ->
     {ok, undefined}.
 
@@ -381,7 +369,7 @@ apply_refresh_function(_Other, _Table, _Key) ->
 remove_entry_from_table(Table, Key) ->
     DeleteFun = fun() ->case mnesia:read(?REFRESH_TABLE, {Table, Key}) of
                 [#refresh_table{timer = TRef}] ->
-                    timer2:cancel(TRef),
+                    timer:cancel(TRef),
                     mnesia:delete({?REFRESH_TABLE, {Table, Key}}),
                     % Necessary to make sure that we didn't repopulate the table
                     %       because a timer fired
@@ -394,6 +382,5 @@ remove_entry_from_table(Table, Key) ->
         {atomic, _} ->
             ok;
         {aborted, _} = Error ->
-            lager:debug("error:~p~n", [Error]),
             {error, Error}
     end.

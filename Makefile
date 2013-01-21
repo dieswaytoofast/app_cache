@@ -4,8 +4,11 @@ ERL := erl
 EPATH := -pa ebin -pz deps/*/ebin
 TEST_EPATH := -pa .eunit -pz deps/*/ebin 
 PLT = .app_cache_plt
+ERL_LIB_DIR := $(shell if [ -d /usr/lib/erlang/lib ] ; then echo /usr/lib/erlang/lib ; else echo /usr/local/lib/erlang/lib ; fi)
+PLT_APPS := $(shell ls $(ERL_LIB_DIR) | grep -v interface | sed -e 's/-[0-9.]*//')
 
-.PHONY: all doc clean test
+.PHONY: all build-plt compile console deps doc clean depclean distclean dialyze release telstart test test-console
+	
 
 all: compile
 

@@ -113,8 +113,8 @@ upgrade_table(Table, Fields) ->
     case mnesia:transform_table(Table, ignore, Fields, Table) of
         {atomic, ok} ->
             ok;
-        {aborted, Reason} ->
-            {error, Reason}
+        {aborted, AError} ->
+            {error, AError}
     end.
 
 -spec upgrade_table(table(), OldVersion :: non_neg_integer(), NewVersion :: non_neg_integer(), [app_field()]) ->
@@ -124,8 +124,8 @@ upgrade_table(Table, _OldVersion, _NewVersion, Fields) ->
     case mnesia:transform_table(Table, ignore, Fields, Table) of
         {atomic, ok} ->
             ok;
-        {aborted, Reason} ->
-            {error, Reason}
+        {aborted, AError} ->
+            {error, AError}
     end.
 
 -spec get_functions(table()) -> #data_functions{} | undefined.
@@ -902,8 +902,8 @@ write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp, _OnlyIfUnique =
     case mnesia:transaction(WriteFun) of
         {atomic, ok} ->
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp, _OnlyIfUnique = true, TTLFieldIndex, Data, ClearedTimestampData) -> 
     Table = element(1, Data),
@@ -923,8 +923,8 @@ write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = false, _OnlyIf
     case mnesia:transaction(WriteFun) of
         {atomic, ok} ->
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = true, _OnlyIfUnique, _TTLFieldIndex, Data, ClearedTimestampData) -> 
     DataFun = fun () -> 
@@ -943,8 +943,8 @@ write_data_to_cache(?TRANSACTION_TYPE_SAFE, _OverwriteTimestamp = true, _OnlyIfU
     case mnesia:transaction(DataFun) of
         {atomic, ok} ->
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 
 write_data_to_cache(?TRANSACTION_TYPE_DIRTY, _OverwriteTimestamp = true, _OnlyIfUnique, _TTLFieldIndex, Data, ClearedTimestampData) -> 
@@ -977,8 +977,8 @@ delete_data(?TRANSACTION_TYPE_SAFE, Table, Keys) ->
     case mnesia:transaction(DeleteFun) of
         {atomic, ok} ->
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 delete_data(?TRANSACTION_TYPE_DIRTY, Table, Keys) ->
     try
@@ -999,8 +999,8 @@ delete_all_data(_, Table) ->
         {atomic, ok} ->
             app_cache_refresher:clear_table(Table),
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end.
 
 -spec delete_record(transaction_type(), boolean(), any()) -> ok | error().
@@ -1019,8 +1019,8 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = false
     case mnesia:transaction(DeleteFun) of
         {atomic, ok} ->
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = true, Record) ->
     ClearedRecord = clear_timestamp_if_exists(Record),
@@ -1046,8 +1046,8 @@ delete_record(?TRANSACTION_TYPE_SAFE = TransactionType, _IgnoreTimestamp = true,
     case mnesia:transaction(DeleteFun) of
         {atomic, _} ->
             ok;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 delete_record(?TRANSACTION_TYPE_DIRTY = TransactionType, _IgnoreTimestamp = false, Record) ->
     Table = element(1, Record),
@@ -1089,8 +1089,8 @@ cache_entry(?TRANSACTION_TYPE_SAFE, Table, Key) ->
     case mnesia:transaction(ReadFun) of
         {atomic, Data} ->
             Data;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 cache_entry(?TRANSACTION_TYPE_DIRTY, Table, Key) ->
     mnesia:dirty_read(Table, Key).
@@ -1101,8 +1101,8 @@ cache_entry_from_index(?TRANSACTION_TYPE_SAFE, Table, Key, IndexPosition) ->
     case mnesia:transaction(ReadFun) of
         {atomic, Data} ->
             Data;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 cache_entry_from_index(?TRANSACTION_TYPE_DIRTY, Table, Key, IndexPosition) ->
     mnesia:dirty_index_read(Table, Key, IndexPosition + 1).
@@ -1116,8 +1116,8 @@ cache_last_key_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
             [];
         {atomic, Key} ->
             cache_entry(TransactionType, Table, Key);
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 cache_last_key_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
     case mnesia:dirty_last(Table) of
@@ -1136,8 +1136,8 @@ cache_first_key_entry(TransactionType = ?TRANSACTION_TYPE_SAFE, Table) ->
             [];
         {atomic, Key} ->
             cache_entry(TransactionType, Table, Key);
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 cache_first_key_entry(TransactionType = ?TRANSACTION_TYPE_DIRTY, Table) ->
     case mnesia:dirty_first(Table) of
@@ -1163,8 +1163,8 @@ cache_select_last_n_entries(TransactionType = ?TRANSACTION_TYPE_SAFE, Table, N) 
             [];
         {atomic, Data} ->
             Data;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 
 
@@ -1212,8 +1212,8 @@ cache_select(?TRANSACTION_TYPE_SAFE, Table, _After, MatchSpec) ->
     case mnesia:transaction(SelectFun) of
         {atomic, Data} ->
             Data;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end;
 cache_select(?TRANSACTION_TYPE_DIRTY, Table, _After, MatchSpec) ->
     mnesia:dirty_select(Table, MatchSpec).
@@ -1226,8 +1226,8 @@ cache_select(_TransactionType, Table, _After, MatchSpec, N) ->
             [];
         {atomic, {Data, _}} ->
             Data;
-        {aborted, {Reason, MData}} ->
-            {error, {Reason, MData}}
+        {aborted, AError} ->
+            {error, AError}
     end.
 
 -spec get_ttl_and_field_index_internal(#app_metatable{}) -> {time_to_live(), table_key_position() | undefined} | error().
