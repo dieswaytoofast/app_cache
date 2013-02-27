@@ -17,7 +17,7 @@
 -type table_type()      :: atom().
 -type timestamp()       :: non_neg_integer().
 -type last_update()     :: timestamp().
--type time_to_live()    :: non_neg_integer() | infinity.
+-type time_to_live()    :: timeout().
 -type table_fields()    :: [table_key()].
 -type transaction_type()    :: safe | dirty.
 -type sequence_key()    :: any().

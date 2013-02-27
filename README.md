@@ -26,7 +26,7 @@ Primarily for use when you need timestamped data, but don't want to actually hav
 
 Details
 =======
-_app_cache_ simplifies the process of setting up and accessing your mnesia tables.  Of course, there is a bit of _win some lose some_ here, i.e., for absolutely performance and controllability, you're better off using mnesia directly. That said, we tend to use this for most of our own needs, dropping into mnesia only when necessary.
+_app_cache_ simplifies the process of setting up and accessing your mnesia tables.  Of course, there is a bit of _win some lose some_ here, i.e., for absolute performance and controllability, you're better off using mnesia directly. That said, we tend to use this for most of our own needs, dropping into mnesia only when necessary.
 
 _app_cache_ stores information about your tables in the form of metadata, in a table called ``` app_metatable``` (big shocker in this name, eh?).  The metadata is stored in a record that looks like so
 
@@ -59,14 +59,14 @@ fields | All the fields in the table | required / no default
 secondary_index_fields | Any additional fields that need indexes on them | []
 read_transform_function | Function used to transform the data _after_ the read, but _before_ you get at it | undefined
 write_transform_function | Function used to transform the data _after_ you say write, but _before_ it gets written | undefined
-refresh_function | A function to automaticaly "refresh" the data | #refresh_data{}
+refresh_function | A function to automatically "refresh" the data | #refresh_data{}
 persist_function | A function to automatically "persist" the data to secondary storage | #persist_data{}
 
 **NOTES**
 
 1. **If** there is a field named ``` timestamp```, **then**, on each write, this field will get automagically updated with the current time in gregorian seconds.  Note that you can override this behavior by setting a value yourself - the auto-timestamping only happens if the value is ```timestamp```.
 2. **If** the ```time_to_live``` is an integer, **then** records in the table will automatically get expired ```time_to_live``` seconds after the last time that record was updated. (**Not** _accessed_. _Updated_!)
-3. ```function_identifier()``` is defined as either an anoymous function
+3. ```function_identifier()``` is defined as either an anonymous function
 ```erlang
 {function, fun foo() -> something_here() end}
 ```
@@ -111,13 +111,13 @@ after_each_read | _true_: The function gets called asynchronously after each rea
 Field | Description | Default
 ----- | ----------- | --------
 function_identifier() | same as (3) above | undefined
-synchronous | _true_: This is a _write_through_ cache, i.e., each cache write is successful if, and only if, the persistance is successful. _false_: The write to persistence is asynchronous (but is triggered with each write) | false
+synchronous | _true_: This is a _write_through_ cache, i.e., each cache write is successful if, and only if, the persistence is successful. _false_: The write to persistence is asynchronous (but is triggered with each write) | false
 
 **CAVEATS**
 
 1. If ```#refresh_data.after_each_read =:= true```, the refresh_function is invoked asynchronously.  Multiple reads on the same key may (and probably **will**) not get the new data immediately.
 2. For refreshing, you need to prime the pump. The automagic refreshing of a record only start _after_ the first read on that record (writing has no effect)
-3. Deleting data which is associated with a refresher can be slow(er) - it needs to sycnchronize the delete with the removal of any stray refreshers.
+3. Deleting data which is associated with a refresher can be slow(er) - it needs to synchronize the delete with the removal of any stray refreshers.
 3. ```#persist_function.function_identifier``` is considered to have failed if it throws an exception. 
 	a. If an exception is thrown, and ```synchronous =:= true``` then the cache write will successfully rollback.  
 	b. If ```synchronous =:= false```, there will be **no** rollback
@@ -127,7 +127,7 @@ Installation
 Add this as a rebar dependency to your project.
 
 1. The _dynarec_ parse_transform is **necessary**. You will find it in **priv/dynarec.erl**.  _You must include this file as part of your source._
-2. _Run **app_cache:setup(Nodes)** at least once before starting your application_!!  This will do some basic house-keeping associated with setting up disc schemae for mnesia.
+2. _Run **app_cache:setup(Nodes)** at least once before starting your application_!!  This will do some basic house-keeping associated with setting up disc schemas for mnesia.
 	a. **Nodes** is a list of all the nodes that you will be running mnesia on.  
 	b. If you are running only one node, you can call  **app_cache:setup()** or **app_cache:setup([node()])**
 
